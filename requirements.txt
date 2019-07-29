@@ -1,6 +1,6 @@
 bandit==1.6.2
 coverage==4.5.3
-coveralls==1.8.1
+coveralls==1.8.2
 docutils==0.14
 Flask==1.1.1
 Flask-SSLify==0.1.5
