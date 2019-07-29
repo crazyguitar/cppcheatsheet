@@ -1,5 +1,5 @@
 bandit==1.6.2
-coverage==4.5.3
+coverage==4.5.4
 coveralls==1.8.1
 docutils==0.14
 Flask==1.1.1
