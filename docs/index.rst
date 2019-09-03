@@ -19,4 +19,4 @@ Contents:
    notes/c_concurrency
    notes/c_socket
    notes/c_make
-
+   notes/bash_basic
