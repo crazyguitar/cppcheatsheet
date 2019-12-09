@@ -9,7 +9,7 @@ Flask-SeaSurf==0.2.2
 flask-talisman==0.7.0
 gunicorn==19.9.0
 pycodestyle==2.5.0
-pydocstyle==3.0.0
+pydocstyle==5.0.1
 requests==2.22.0
 Sphinx==1.8.5
 Werkzeug==0.16.0
