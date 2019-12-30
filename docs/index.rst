@@ -20,3 +20,6 @@ Contents:
    notes/c_socket
    notes/c_make
    notes/bash_basic
+   notes/cpp_basic
+   notes/cpp_template
+   notes/gdb_debug
