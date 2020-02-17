@@ -1,6 +1,6 @@
 bandit==1.6.2
 coverage==5.0.3
-coveralls==1.11.0
+coveralls==1.11.1
 Flask==1.1.1
 Flask-SSLify==0.1.5
 Flask-Testing==0.7.1
