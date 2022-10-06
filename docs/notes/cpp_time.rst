@@ -47,6 +47,32 @@ To ``chrono::chrono::time_point``
       std::cout << std::put_time(std::gmtime(&t), "%FT%TZ") << "\n";
     }
 
+Duration
+--------
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <chrono>
+
+    int main(int argc, char *argv[]) {
+      using seconds = std::chrono::seconds;
+      using namespace std::chrono_literals;
+      auto now = std::chrono::system_clock::now();
+      auto future = now + 1ms;
+      auto t = std::chrono::system_clock::to_time_t(future);
+      std::cout << "timestamp: " << std::ctime(&t);
+
+      auto start = std::chrono::system_clock::now();
+      auto end = std::chrono::system_clock::now() + 10s;
+      auto duration = duration_cast<seconds>(end - start);
+      std::cout << duration.count() << " sec\n";
+
+      // output:
+      // timestamp: Thu Oct  6 12:39:35 2022
+      // 10 sec
+    }
+
 Profiling
 ---------
 
