@@ -5,6 +5,85 @@ Basic cheatsheet
 .. contents:: Table of Contents
     :backlinks: none
 
+C Linkage
+---------
+
+.. code-block:: cpp
+
+    #include <iostream>
+
+    #ifdef __cplusplus
+    extern "C" {
+    #endif
+
+    int fib(int n) {
+      int a = 0, b = 1;
+      for (int i = 0; i < n; ++i) {
+        auto x = b;
+        b = a + b;
+        a = x;
+      }
+      return a;
+    }
+
+    #ifdef __cplusplus
+    }
+    #endif
+
+    int main(int argc, char *argv[]) {
+      std::cout << fib(10) << "\n";
+    }
+    // $ g++ -std=c++17 -Wall -Werror -O3 a.cc
+    // $ nm -g a.out | grep fib
+    // 0000000100003a58 T _fib
+
+.. code-block:: cpp
+
+    #include <iostream>
+
+    int fib(int n) {
+      int a = 0, b = 1;
+      for (int i = 0; i < n; ++i) {
+        auto x = b;
+        b = a + b;
+        a = x;
+      }
+      return a;
+    }
+
+    int main(int argc, char *argv[]) {
+      std::cout << fib(10) << "\n";
+    }
+    // $ g++ -std=c++17 -Wall -Werror -O3 a.cc
+    // nm -g a.out | grep fib
+    // 0000000100003a58 T __Z3fibi
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <sys/cdefs.h>
+
+    __BEGIN_DECLS
+
+    int fib(int n) {
+      int a = 0, b = 1;
+      for (int i = 0; i < n; ++i) {
+        auto x = b;
+        b = a + b;
+        a = x;
+      }
+      return a;
+    }
+
+    __END_DECLS
+
+    int main(int argc, char *argv[]) {
+      std::cout << fib(10) << "\n";
+    }
+    // $ g++ -std=c++17 -Wall -Werror -O3 a.cc
+    // $ nm -g a.out | grep fib
+    // 0000000100003a58 T _fib
+
 Uniform Initialization
 ----------------------
 
