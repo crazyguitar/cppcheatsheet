@@ -483,6 +483,48 @@ functions.
         return 0;
     }
 
+Recursion
+---------
+
+There are two ways to run a lambda function recursively. The first one is using
+``std::function``. However, this solution is slower than normal recursive function.
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <functional>
+    #include <chrono>
+
+    int main(int argc, char *argv[]) {
+      using namespace std::chrono;
+      std::function<int(int)> fib;
+      fib = [&](auto n) { return n <= 1 ? 1 : (fib(n - 1) + fib(n - 2)); };
+      auto s = system_clock::now();
+      fib(30);
+      auto e = system_clock::now();
+      std::cout << duration_cast<milliseconds>(e - s).count() << "\n";
+    }
+
+Another way is making lamdbda as an input arguemnt. The performance approaches
+the normal function.
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <chrono>
+
+
+    int main(int argc, char *argv[]) {
+      using namespace std::chrono;
+      auto fib = [&](auto &&n, auto &&fib) -> int {
+        return n <= 1 ? 1 : (fib(n - 1, fib) + fib(n - 2, fib));
+      };
+      auto s = system_clock::now();
+      fib(30, fib);
+      auto e = system_clock::now();
+      std::cout << duration_cast<milliseconds>(e - s).count() << "\n";
+    }
+
 Reference
 ---------
 
