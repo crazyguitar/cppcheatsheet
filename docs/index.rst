@@ -79,6 +79,7 @@ GNU Debugger Cheat Sheet
    :maxdepth: 1
 
    notes/gdb_debug
+   notes/perf
 
 Systemd Cheat Sheet
 -------------------

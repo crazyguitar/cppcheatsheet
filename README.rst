@@ -1,9 +1,6 @@
 Documentation Status
 ======================
 
-.. image:: https://travis-ci.org/crazyguitar/cppcheatsheet.svg?branch=master
-     :target: https://travis-ci.org/crazyguitar/cppcheatsheet
-
 .. image:: https://img.shields.io/badge/doc-pdf-blue
      :target: https://cppcheatsheet.readthedocs.io/_/downloads/en/latest/pdf/
 
@@ -66,6 +63,7 @@ GNU Debugger
 ============
 
 - `GDB <docs/notes/gdb_debug.rst>`_
+- `Perf <docs/notes/perf.rst>`_
 
 Systemd
 =======
