@@ -379,6 +379,31 @@ range-v3 - join
     >>> ' '.join(v)
     'hello python'
 
+range-v3 - split + join
+-----------------------
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <vector>
+    #include <string>
+    #include <range/v3/view/c_str.hpp>
+    #include <range/v3/action/split.hpp>
+    #include <range/v3/view/join.hpp>
+
+    int main(int argc, char *argv[]) {
+      std::string s = "a b c d e";
+      auto v = ranges::actions::split(s, ranges::views::c_str(" "));
+      auto x = v | ranges::views::join(',') | ranges::to<std::string>();
+      std::cout << x << "\n";
+    }
+
+.. code-block:: python
+
+    >>> s = "a b c d e"
+    >>> ",".join(s.split(" "))
+    'a,b,c,d,e'
+
 range-v3 - iota
 ---------------
 
