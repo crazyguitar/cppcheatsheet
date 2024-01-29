@@ -71,6 +71,44 @@ Variable Expansion
     # expand to "$foo1" "$foo2"
     $ echo "${!foo@}"
 
+Globs
+-----
+
+"Globs" is a functionality in Bash that matches or expands specific patterns.
+It's important to note that in the shell, the asterisk (*) is expanded only if
+it is unquoted. If placed within quotation marks, the asterisk will be treated
+as a regular character and not undergo expansion.
+
+.. code-block:: bash
+
+   # list a file which name is "*"
+   $ ls "${PWD}/*"
+
+   # list current folder files
+   $ ls ${PWD}/*
+
+   # list files with prefix `foo`
+   $ ls ${PWD}/foo*
+
+   # list files containing foo
+   $ ls ${PWD}/*foo*
+
+   # list files with any character in the end (fools not matched)
+   $ ls ${PWD}/foo?
+
+   # list files with pattern fooc or food
+   $ ls ${PWD}/foo[ch]
+
+   # list files with ranges [abcd]
+   $ ls ${PWD}/foo[abcd]
+
+   # list files with ranges [a-z]
+   $ ls ${PWD}/foo[a-z]*
+
+   # list files with alphanumeric [a-zA-Z0-9]
+   $ ls ${PWD}/foo[[:alnum:]]*
+   $ ls ${PWD}/foo[a-zA-Z0-9]*
+
 String length
 -------------
 
