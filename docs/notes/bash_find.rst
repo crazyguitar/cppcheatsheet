@@ -92,6 +92,24 @@ Delete after Find
     # delete recursively
     find ker -type d -exec rm -rf {} \+
 
+Loop through files
+------------------
+
+.. code-block:: bash
+
+   # ref: https://stackoverflow.com/questions/9612090
+
+   # execute `echo` once for each file
+   find "${path}" -name "*.txt" -exec echo {} \;
+
+   # execute `echo` once with all the files
+   find "${path}" -name "*.txt" -exec echo {} +
+
+   # using while loop
+   find "${path}" -name "*.txt" -print0 | while IFS= read -r -d '' file; do
+     echo "$file"
+   done
+
 ``grep`` after find
 -------------------
 
