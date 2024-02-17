@@ -130,6 +130,7 @@ Loop through files
    echo "${var}"
 
    # ref: https://unix.stackexchange.com/questions/9496
+   # https://askubuntu.com/questions/678915
 
 ``grep`` after find
 -------------------
