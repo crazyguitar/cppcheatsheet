@@ -92,6 +92,16 @@ Delete after Find
     # delete recursively
     find ker -type d -exec rm -rf {} \+
 
+
+Sort files
+----------
+
+.. code-block:: bash
+
+   # ref: https://unix.stackexchange.com/questions/34325
+   find . -name "*.txt" -print0 | sort -z | xargs -r0 -I{} echo "{}"
+
+
 Loop through files
 ------------------
 
@@ -109,6 +119,17 @@ Loop through files
    find "${path}" -name "*.txt" -print0 | while IFS= read -r -d '' file; do
      echo "$file"
    done
+
+   # the above example will invoke a subshell, so if we have to set a variable,
+   # we can rewrite a while loop as following snippet
+   var=0
+   while IFS= read -r -d '' file; do
+     echo "${file}"
+     var=1
+   done < <(find . -print0)
+   echo "${var}"
+
+   # ref: https://unix.stackexchange.com/questions/9496
 
 ``grep`` after find
 -------------------
