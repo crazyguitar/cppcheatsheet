@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "C/C++ Cheatsheet"
+authors:
+- family-names: "Tsai"
+  given-names: "Chang-Ning"
+  orcid: "https://orcid.org/0009-0000-5297-5940"
+  github: "crazyguitar"
+abstract: "A comprehensive C++ cheat sheet covering C++ syntax, features, and code snippets."
+version: "master"
+repository-code: "https://github.com/crazyguitar/cppcheatsheet"
+license: "MIT"
+date-released: "2016-05-06"
+url: "https://github.com/crazyguitar/cppcheatsheet"
+keywords:
+  - cpp
+  - cheatsheet
+  - c-plus-plus
+  - programming
+  - reference
