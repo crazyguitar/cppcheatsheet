@@ -4,6 +4,9 @@ Documentation Status
 .. image:: https://img.shields.io/badge/doc-pdf-blue
      :target: https://cppcheatsheet.readthedocs.io/_/downloads/en/latest/pdf/
 
+.. image:: https://zenodo.org/badge/53253009.svg
+  :target: https://doi.org/10.5281/zenodo.15528895
+
 C Cheat Sheet
 =============
 
