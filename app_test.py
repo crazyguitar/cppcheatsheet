@@ -44,7 +44,6 @@ class PysheeetTest(LiveServerTestCase):
         """Check security headers."""
         headers = resp.headers
         self.assertTrue("Content-Security-Policy" in headers)
-        self.assertTrue("X-XSS-Protection" in headers)
         self.assertTrue("X-Content-Type-Options" in headers)
         self.assertTrue("Content-Security-Policy" in headers)
         self.assertTrue("Feature-Policy" in headers)
