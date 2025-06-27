@@ -9,6 +9,6 @@ flask-talisman==1.1.0
 gunicorn==21.2.0
 pycodestyle==2.11.0
 pydocstyle==6.3.0
-requests==2.31.0
+requests==2.32.4
 Sphinx==7.1.2
 Werkzeug==3.1.0
