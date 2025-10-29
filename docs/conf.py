@@ -33,7 +33,25 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'myst_parser',
+    'sphinx_copybutton',
+    'sphinx.ext.graphviz',
+    'sphinx_design',
+    'sphinx.ext.extlinks'
 ]
+
+myst_enable_extensions = [
+    "colon_fence",
+    "attrs_inline",
+    "attrs_block",
+    "tasklist",
+    "substitution",
+]
+
+myst_enable_checkboxes = True
+myst_heading_anchors = 6
+copybutton_prompt_text = r'^\$ '
+copybutton_prompt_is_regexp = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -113,21 +131,14 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_book_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'logo':'dennis.png',
-    'show_powered_by': False,
-    'github_user': 'crazyguitar',
-    'github_repo': 'cppcheatsheet',
-    'github_banner': True,
-    'github_button': False,
-    'show_related': False,
-    'head_font_family': 'Georgia',
-    'font_family': 'Georgia'
+  "repository_url": "https://github.com/crazyguitar/cppcheatsheet",
+  "use_repository_button": True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -145,7 +156,7 @@ html_context = {
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+#html_logo = "_static/dennis.png"
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -173,22 +184,10 @@ html_extra_path = ['_extra']
 
 # Custom sidebar templates, maps document names to template names.
 html_sidebars = {
-    'index': [
-        'sidebarintro.html',
-        'about.html',
-        'link.html',
-        'github.html',
-        'cheatsheets.html',
-        'searchbox.html'
-    ],
-    '**': [
-        'sidebarintro.html',
-        'link.html',
-        'github.html',
-        'cheatsheets.html',
-        'localtoc.html',
-        'relations.html',
-        'searchbox.html'
+    "**": [
+        "navbar-logo.html",
+        "search-button-field.html",
+        "sbt-sidebar-nav.html",
     ]
 }
 

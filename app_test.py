@@ -6,6 +6,7 @@ import unittest
 import requests
 import os
 
+from pathlib import Path
 from werkzeug.exceptions import NotFound
 from flask_testing import LiveServerTestCase
 
@@ -66,10 +67,11 @@ class PysheeetTest(LiveServerTestCase):
 
     def test_static_proxy_req(self):
         """Test that send a request for notes."""
-        htmls = os.listdir(os.path.join(ROOT, "notes"))
         url = self.get_server_url()
-        for h in htmls:
-            u = url + "/notes/" + h
+        notes = Path(ROOT) / "notes"
+        for html in notes.rglob("*.html"):
+            page = html.relative_to(ROOT)
+            u = f"{url}/{page}"
             resp = requests.get(u)
             self.check_security_headers(resp)
             self.check_csrf_cookies(resp)
@@ -129,13 +131,16 @@ class PysheeetTest(LiveServerTestCase):
 
     def test_static_proxy(self):
         """Test that request static pages."""
-        htmls = os.listdir(os.path.join(ROOT, "notes"))
-
-        for h in htmls:
-            u = "notes/" + h
+        notes = Path(ROOT) / "notes"
+        for html in notes.rglob("*.html"):
+            u = html.relative_to(ROOT)
             resp = static_proxy(u)
             self.assertEqual(resp.status_code, 200)
             resp.close()
+
+        u = "notes/../conf.py"
+        _, code = static_proxy(u)
+        self.assertEqual(code, 404)
 
     def test_page_not_found(self):
         """Test page not found."""
