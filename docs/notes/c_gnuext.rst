@@ -1073,7 +1073,7 @@ Unnamed Structure and Union Fields
 
 output:
 
-.. code-block:: bash
+.. code-block:: console
 
     # without gcc options -std=c11 will raise warning
     $ gcc -g -Wall -pedantic test.c

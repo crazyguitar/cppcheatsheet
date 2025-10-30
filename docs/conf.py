@@ -37,7 +37,8 @@ extensions = [
     'sphinx_copybutton',
     'sphinx.ext.graphviz',
     'sphinx_design',
-    'sphinx.ext.extlinks'
+    'sphinx.ext.extlinks',
+    'sphinx_sitemap'
 ]
 
 myst_enable_extensions = [
@@ -87,7 +88,7 @@ release = u'0.1.0'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -125,6 +126,9 @@ pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+# -- Sitemap configuration ------------------------------------------------
+html_baseurl = 'https://cppcheatsheet.com/'
 
 
 # -- Options for HTML output ----------------------------------------------
