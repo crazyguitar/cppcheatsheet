@@ -143,8 +143,7 @@ html_theme = 'sphinx_book_theme'
 html_theme_options = {
   "repository_url": "https://github.com/crazyguitar/cppcheatsheet",
   "use_repository_button": True,
-  "pygment_light_style": "default",
-  "pygment_dark_style": "monokai",
+  "theme_switcher_button": False,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
