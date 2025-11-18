@@ -1,5 +1,15 @@
 {% extends "!layout.html" %}
 {%- block extrahead %}
+<meta name="color-scheme" content="light">
+<script>
+(function() {
+  document.documentElement.setAttribute('data-theme', 'light');
+  localStorage.setItem('theme', 'light');
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').matches = false;
+  }
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="{% if pagename == 'index' %}Comprehensive C/C++ cheat sheet with practical code snippets for developers. Learn C/C++ basics, advanced topics, memory management, and more.{% else %}{{ title }} - C/C++ code examples and snippets from the comprehensive C/C++ cheat sheet.{% endif %}">
 <meta name="keywords" content="C++, C, C++ cheat sheet, C cheat sheet, C++ tutorial, C tutorial, C++ examples, C examples, C++ code snippets, C code snippets, programming, development">

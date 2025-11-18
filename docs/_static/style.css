@@ -39,19 +39,6 @@ html[data-theme=light] {
     --pst-color-primary: #176de8;
 }
 
-html {
-    color-scheme: light only !important;
-}
-
-html[data-theme="dark"] {
-    color-scheme: light only !important;
-}
-
-body {
-    background-color: white !important;
-    color: black !important;
-}
-
 .graph#doc-flowchart .node text {
     font-weight: bold;
 }
