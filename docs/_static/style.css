@@ -39,12 +39,12 @@ html[data-theme=light] {
     --pst-color-primary: #176de8;
 }
 
-html[data-theme=dark] {
-    display: none !important;
+html {
+    color-scheme: light only !important;
 }
 
-html {
-    color-scheme: light !important;
+html[data-theme="dark"] {
+    color-scheme: light only !important;
 }
 
 body {
