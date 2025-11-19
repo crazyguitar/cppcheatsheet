@@ -5,9 +5,16 @@
 (function() {
   document.documentElement.setAttribute('data-theme', 'light');
   localStorage.setItem('theme', 'light');
-  if (window.matchMedia) {
-    window.matchMedia('(prefers-color-scheme: dark)').matches = false;
-  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.documentElement.setAttribute('data-theme', 'light');
+    const observer = new MutationObserver(function() {
+      if (document.documentElement.getAttribute('data-theme') !== 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  });
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
