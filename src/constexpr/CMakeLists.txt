@@ -1,0 +1,7 @@
+add_subdirectory(constexpr-function)
+add_subdirectory(constexpr-vs-tmp)
+add_subdirectory(constexpr-variable)
+add_subdirectory(constexpr-if)
+add_subdirectory(consteval)
+add_subdirectory(constinit)
+add_subdirectory(if-consteval)
