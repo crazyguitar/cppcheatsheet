@@ -16,7 +16,6 @@ FetchContent_MakeAvailable(googletest)
 
 # Common dependencies
 find_package(Threads REQUIRED)
-find_package(spdlog REQUIRED)
 
 if(ENABLE_CUDA)
   find_package(CUDAToolkit REQUIRED)
