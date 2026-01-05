@@ -4,13 +4,17 @@ on: [push, pull_request]
 
 jobs:
   cpp:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies
-      run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build g++-14
     - name: Build and Test
       run: make
+      env:
+        CXX: g++-14
 
   python:
     runs-on: ubuntu-latest
