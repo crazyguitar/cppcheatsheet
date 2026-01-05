@@ -4,13 +4,23 @@ VER  = $(word 2, $(shell python --version 2>&1))
 SRC  = app.py app_test.py
 PY36 = $(shell expr $(VER) \>= 3.6)
 
-.PHONY: build deps test
-build: html
+.PHONY: all docs deps pytest build test format clean
 
-%:
-	cd docs && make $@
+all: build test
 
-test: clean build
+docs:
+	cd docs && make html
+
+build:
+	./build.sh
+
+test: build
+	@for t in build/src/basic/*/; do \
+		name=$$(basename $$t); \
+		[ -x "$$t$$name" ] && "$$t$$name" || true; \
+	done
+
+pytest: clean docs
 	pycodestyle $(SRC)
 	pydocstyle $(SRC)
 	bandit app.py
@@ -24,3 +34,10 @@ deps:
 ifeq ($(PY36), 1)
 	pip install black==22.3.0
 endif
+
+format:
+	find . -type f -name "*.cc" -o -name "*.h" -o -name "*.cu" -o -name "*.cuh" | xargs -I{} clang-format -style=file -i {}
+
+clean:
+	rm -rf build
+	cd docs && make clean

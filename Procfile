@@ -1,1 +1,1 @@
-web: make clean && make && gunicorn app:app --log-file -
+web: make docs && gunicorn app:app --log-file -

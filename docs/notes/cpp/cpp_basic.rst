@@ -1,12 +1,28 @@
-================
-Basic cheatsheet
-================
+======================
+Fundamentals Reference
+======================
 
 .. contents:: Table of Contents
     :backlinks: none
 
-C Linkage
----------
+C Linkage and Name Mangling
+---------------------------
+
+:Source: `src/basic/c-linkage <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/c-linkage>`_
+
+In C++, the compiler applies *name mangling* to function symbols to support
+function overloading. Name mangling encodes function signatures (parameter types,
+namespaces, and template arguments) into the symbol name, allowing multiple
+functions with the same name but different signatures to coexist. When interfacing
+with C libraries or exposing functions to C code, ``extern "C"`` disables name
+mangling to ensure binary compatibility across different compilers and languages.
+
+**With extern "C" (C linkage):**
+
+Using ``nm`` to inspect the symbol table, we can observe that the ``fib``
+function retains its original name without mangling. The symbol ``_fib``
+follows C naming conventions, making it accessible from C code or other
+languages that use C-compatible calling conventions:
 
 .. code-block:: cpp
 
@@ -19,9 +35,9 @@ C Linkage
     int fib(int n) {
       int a = 0, b = 1;
       for (int i = 0; i < n; ++i) {
-        auto x = b;
+        int tmp = b;
         b = a + b;
-        a = x;
+        a = tmp;
       }
       return a;
     }
@@ -31,11 +47,23 @@ C Linkage
     #endif
 
     int main(int argc, char *argv[]) {
-      std::cout << fib(10) << "\n";
+      std::cout << fib(10) << "\n";  // Output: 55
     }
-    // $ g++ -std=c++17 -Wall -Werror -O3 a.cc
-    // $ nm -g a.out | grep fib
-    // 0000000100003a58 T _fib
+
+.. code-block:: bash
+
+    $ g++ -std=c++17 -Wall -Werror -O3 a.cc
+    $ nm -g a.out | grep fib
+    0000000100003a58 T _fib    # C-style symbol (no mangling)
+
+**Without extern "C" (C++ linkage):**
+
+Without the ``extern "C"`` wrapper, the compiler mangles the function name
+to encode type information for overload resolution. The mangled symbol
+``__Z3fibi`` follows the Itanium C++ ABI naming scheme: ``_Z`` indicates a
+mangled name, ``3fib`` represents the function name with its length prefix,
+and ``i`` denotes an ``int`` parameter. This encoding enables the linker to
+distinguish between overloaded functions:
 
 .. code-block:: cpp
 
@@ -44,9 +72,9 @@ C Linkage
     int fib(int n) {
       int a = 0, b = 1;
       for (int i = 0; i < n; ++i) {
-        auto x = b;
+        int tmp = b;
         b = a + b;
-        a = x;
+        a = tmp;
       }
       return a;
     }
@@ -54,9 +82,19 @@ C Linkage
     int main(int argc, char *argv[]) {
       std::cout << fib(10) << "\n";
     }
-    // $ g++ -std=c++17 -Wall -Werror -O3 a.cc
-    // nm -g a.out | grep fib
-    // 0000000100003a58 T __Z3fibi
+
+.. code-block:: bash
+
+    $ nm -g a.out | grep fib
+    0000000100003a58 T __Z3fibi    # Mangled symbol: _Z3fibi
+
+**Platform-specific macros:**
+
+On BSD and macOS systems, ``<sys/cdefs.h>`` provides ``__BEGIN_DECLS`` and
+``__END_DECLS`` as portable alternatives to ``extern "C"``. These macros
+expand to the appropriate linkage specification when compiled as C++ and
+to nothing when compiled as C, simplifying header files shared between
+both languages:
 
 .. code-block:: cpp
 
@@ -64,385 +102,463 @@ C Linkage
     #include <sys/cdefs.h>
 
     __BEGIN_DECLS
-
-    int fib(int n) {
-      int a = 0, b = 1;
-      for (int i = 0; i < n; ++i) {
-        auto x = b;
-        b = a + b;
-        a = x;
-      }
-      return a;
-    }
-
+    int fib(int n) { /* ... */ }
     __END_DECLS
 
-    int main(int argc, char *argv[]) {
-      std::cout << fib(10) << "\n";
-    }
-    // $ g++ -std=c++17 -Wall -Werror -O3 a.cc
-    // $ nm -g a.out | grep fib
-    // 0000000100003a58 T _fib
+Uniform Initialization (Brace Initialization)
+---------------------------------------------
 
-Uniform Initialization
-----------------------
+:Source: `src/basic/uniform-initialization <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/uniform-initialization>`_
 
-*Uniform Initialization* is also called braced initialization, which unifies
-constructing an object using a brace. However, there are some pitfalls in using
-syntax. For example, the compiler prefers to call ``std::initializer_list`` to
-initialize an object even with a matched constructor. The following snippet shows
-that ``x{10, 5.0}`` will call ``Foo(std::initializer_list<long double>)`` to
-construct an object event though ``Foo(int a, double b)`` is the more suitable one.
+Introduced in C++11, *uniform initialization* (also known as *brace initialization*)
+provides a consistent syntax for initializing objects of any type. This syntax
+works for primitives, aggregates, containers, and user-defined types. However,
+the compiler prioritizes ``std::initializer_list`` constructors when applicable,
+which can lead to surprising behavior if not understood properly.
 
-.. code-block:: cpp
+**Initializer list takes precedence:**
 
-   #include <iostream>
-   #include <initializer_list>
-
-   class Foo {
-   public:
-     Foo(int a, double b) {
-       std::cout << "without initializer_list\n";
-     }
-
-     Foo(std::initializer_list<long double> il) {
-       std::cout << "with initializer_list\n";
-     }
-   };
-
-   int main(int argc, char *argv[]) {
-     Foo x{10, 5.0};
-      // output: with initializer_list
-   }
-
-
-Moreover, *uniform initialization* does not support narrowing conversion.
-Therefore, the following snippet will compile errors because ``int`` and
-``double`` need to do narrowing conversion ``bool``.
+When both a direct constructor and an ``std::initializer_list`` constructor
+are viable, the compiler strongly prefers the initializer list version. In this
+example, ``Widget{10, 5.0}`` invokes the initializer list constructor even though
+``Widget(int, double)`` appears to be a better match. The values ``10`` and ``5.0``
+are implicitly converted to ``long double`` and passed as a two-element initializer
+list. This behavior is mandated by the C++ standard to ensure consistent semantics
+for brace initialization:
 
 .. code-block:: cpp
 
     #include <iostream>
     #include <initializer_list>
 
-    class Foo {
-    public:
-      Foo(int a, double b) {
-        std::cout << "without initializer_list\n";
-      }
+    class Widget {
+     public:
+      Widget(int a, double b) { std::cout << "Direct constructor\n"; }
 
-      // compile error
-      Foo(std::initializer_list<bool> il) {
-        std::cout << "with initializer_list\n";
-      }
+      Widget(std::initializer_list<long double> il) { std::cout << "Initializer list constructor\n"; }
     };
 
     int main(int argc, char *argv[]) {
-      Foo x{10, 5.0};
+      Widget w{10, 5.0};  // Output: Initializer list constructor
     }
 
-Note that when types cannot convert, the compiler does not use ``std::initializer_list``
-to initialize an object. For example, ``int`` and ``double`` cannot convert to
-``std::string``, so the compiler will call ``Foo(int, double)`` to create an object.
+**Narrowing conversions are prohibited:**
+
+Brace initialization prevents implicit narrowing conversions, providing an
+additional layer of type safety compared to parentheses initialization. The
+following code produces a compilation error because ``int`` and ``double``
+cannot implicitly narrow to ``bool`` without potential data loss. This
+protection helps catch bugs at compile time that might otherwise cause
+subtle runtime errors:
+
+.. code-block:: cpp
+
+    #include <initializer_list>
+
+    class Widget {
+     public:
+      Widget(int a, double b) {}
+      Widget(std::initializer_list<bool> il) {}
+    };
+
+    int main(int argc, char *argv[]) {
+      Widget w{10, 5.0};  // Compilation error: narrowing conversion
+    }
+
+**Fallback to direct constructor:**
+
+When no valid conversion exists for the initializer list element type,
+the compiler falls back to the matching direct constructor. Here, ``int``
+and ``double`` cannot convert to ``std::string`` (there is no implicit
+conversion path), so the compiler bypasses the initializer list constructor
+entirely and selects the direct constructor instead:
 
 .. code-block:: cpp
 
     #include <iostream>
+    #include <initializer_list>
     #include <string>
-    #include <initializer_list>
 
-    class Foo {
-    public:
-      Foo(int a, double b) {
-        std::cout << "without initializer_list\n";
-      }
+    class Widget {
+     public:
+      Widget(int a, double b) { std::cout << "Direct constructor\n"; }
 
-      Foo(std::initializer_list<std::string> il) {
-        std::cout << "with initializer_list\n";
-      }
+      Widget(std::initializer_list<std::string> il) { std::cout << "Initializer list constructor\n"; }
     };
 
     int main(int argc, char *argv[]) {
-      Foo x{10, 5.0};
-      // output: without initializer_list
+      Widget w{10, 5.0};  // Output: Direct constructor
     }
 
+Pointer Arithmetic and Negative Indices
+---------------------------------------
 
-Negative Array index
---------------------
+:Source: `src/basic/negative-array-index <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/negative-array-index>`_
+
+In C++, the subscript operator ``[]`` is defined as pointer arithmetic:
+``arr[i]`` is equivalent to ``*(arr + i)``. This equivalence is fundamental
+to how arrays work in C and C++, and it allows negative indices when the
+pointer references an element beyond the array's beginning. While this
+flexibility is powerful, it requires careful bounds management to avoid
+undefined behavior.
+
+In this example, ``ptr`` points to ``arr[1]``, the second element of the array.
+Using ``ptr[-1]`` computes ``*(ptr - 1)``, which accesses ``arr[0]``. This
+technique is commonly used in algorithms that need to look backward from a
+current position, such as insertion sort or string parsing:
 
 .. code-block:: cpp
 
     #include <iostream>
 
     int main(int argc, char *argv[]) {
-        // note: arr[i] = *(a + i)
-        int arr[] = {1, 2, 3};
-        int *ptr = &arr[1];
+      int arr[] = {1, 2, 3};
+      int *ptr = &arr[1];  // Points to second element
 
-        std::cout << ptr[-1] << "\n";
-        std::cout << ptr[0] << "\n";
-        std::cout << ptr[1] << "\n";
+      std::cout << ptr[-1] << "\n";  // Output: 1 (arr[0])
+      std::cout << ptr[0] << "\n";   // Output: 2 (arr[1])
+      std::cout << ptr[1] << "\n";   // Output: 3 (arr[2])
     }
 
+Template Type Deduction
+-----------------------
 
-Reference
----------
+:Source: `src/basic/reference-collapsing <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/reference-collapsing>`_
+
+Understanding how template parameters deduce types is essential for writing
+generic C++ code. The deduction rules differ based on the parameter declaration,
+and mastering these rules is crucial for effective use of templates, ``auto``,
+and perfect forwarding. The following three examples demonstrate how the same
+arguments produce different deduced types depending on whether the parameter
+is an lvalue reference, universal reference, or value.
+
+**Lvalue reference parameters (T&):**
+
+When the parameter is an lvalue reference, the deduced type ``T`` preserves
+const-qualifiers from the argument, but the reference itself is not part of ``T``.
+This means passing a ``const int`` deduces ``T`` as ``const int``, and the
+parameter type becomes ``const int&``. This behavior ensures that const-correctness
+is maintained through template instantiation:
 
 .. code-block:: cpp
 
-    #include <iostream>
-
-    template<typename T>
+    template <typename T>
     void f(T& param) noexcept {}
-    // param is a reference
-
-    int main(int argc, char *argv[])
-    {
-        int x = 123;
-        const int cx = x;
-        const int &rx = x;
-
-        f(x);   // type(param) = int&
-        f(cx);  // type(param) = const int&
-        f(rx);  // type(param) = const int&
-
-        return 0;
-    }
-
-
-.. code-block:: cpp
-
-    #include <iostream>
-
-    template<typename T>
-    void f(T&& param) noexcept {}
-    // param is a universal reference
-
-    int main(int argc, char *argv[])
-    {
-        int x = 123;
-        const int cx = x;
-        const int &rx = x;
-
-        f(x);   // x is a lvalue, type(param) = int&
-        f(cx);  // cx is a lvalue, type(param) = const int&
-        f(rx);  // rx is a lvalue, type(param) = const int&
-        f(12);  // 12 is a rvalue, type(param) = int&&
-
-        return 0;
-    }
-
-.. code-block:: cpp
-
-    #include <iostream>
-
-    template<typename T>
-    void f(T param) noexcept {}
-    // param is neither a pointer nor a reference.
-
-    int main(int argc, char *argv[])
-    {
-        int x = 123;
-        const int cx = x;
-        const int &rx = x;
-
-        f(x);   // type(param) = int
-        f(cx);  // type(param) = int
-        f(rx);  // type(param) = int
-        f(12);  // type(param) = int
-
-        return 0;
-    }
-
-auto
-----
-
-.. code-block:: cpp
-
-    auto x = 123;        // type(x) = int
-    const auto cx = x;   // type(cx) = const int
-    const auto &rx = x;  // type(rx) = const int&
-
-    auto &&urx = x;      // type(urx) = int&
-    auto &&urcx = cx;    // type(urcx) = const int&
-    auto &&urrx = rx;    // type(urrx) = const int&
-    auto &&urrv = 12;    // type(urrv) = int&&
-
-decltype(auto)
---------------
-
-The ``decltype(auto)`` is similar to auto, which decudes type via compiler.
-However, ``decltype(auto)`` preserves types reference and cv-qualifiers, while
-auto does not.
-
-.. code-block:: cpp
-
-    #include <type_traits>
 
     int main(int argc, char *argv[]) {
-      int x;
+      int x = 123;
       const int cx = x;
-      const int &crx = x;
-      int &&z = 0;
+      const int& rx = x;
 
-      // decltype(auto) preserve cv-qualifiers
-      decltype(auto) y1 = crx;
-      static_assert(std::is_same<const int &, decltype(y1)>::value == 1);
-      // auto does not preserve cv-qualifiers
-      auto y2 = crx;
-      static_assert(std::is_same<int, decltype(y2)>::value == 1);
-      // decltype(auto) preserve rvalue reference
-      decltype(auto) z1 = std::move(z);
-      static_assert(std::is_same<int &&, decltype(z1)>::value == 1);
+      f(x);   // T = int,       param: int&
+      f(cx);  // T = const int, param: const int&
+      f(rx);  // T = const int, param: const int&
     }
 
-``decltype(auto)`` is especially useful for writing a generic function's return.
+**Universal reference parameters (T&&):**
+
+Universal references (also called forwarding references) behave differently
+for lvalues and rvalues, making them the foundation of perfect forwarding.
+When passed an lvalue, ``T`` deduces to an lvalue reference type (e.g., ``int&``),
+and reference collapsing produces an lvalue reference parameter. When passed
+an rvalue, ``T`` deduces to a non-reference type, and the parameter becomes
+an rvalue reference. This dual behavior allows a single function template to
+accept both lvalues and rvalues:
+
+.. code-block:: cpp
+
+    template <typename T>
+    void f(T&& param) noexcept {}
+
+    int main(int argc, char *argv[]) {
+      int x = 123;
+      const int cx = x;
+      const int& rx = x;
+
+      f(x);   // x is lvalue:  T = int&,       param: int&
+      f(cx);  // cx is lvalue: T = const int&, param: const int&
+      f(rx);  // rx is lvalue: T = const int&, param: const int&
+      f(12);  // 12 is rvalue: T = int,        param: int&&
+    }
+
+**Value parameters (T):**
+
+When the parameter is passed by value, the argument is copied, and both
+references and top-level const-qualifiers are stripped from the deduced type.
+This occurs because the function receives an independent copy that can be
+modified without affecting the original. The decay behavior mirrors what
+happens when you assign to a new variable of type ``auto``:
+
+.. code-block:: cpp
+
+    template <typename T>
+    void f(T param) noexcept {}
+
+    int main(int argc, char *argv[]) {
+      int x = 123;
+      const int cx = x;
+      const int& rx = x;
+
+      f(x);   // T = int, param: int (copy)
+      f(cx);  // T = int, param: int (const dropped)
+      f(rx);  // T = int, param: int (reference and const dropped)
+      f(12);  // T = int, param: int
+    }
+
+Auto Type Deduction
+-------------------
+
+The ``auto`` keyword follows the same deduction rules as template value
+parameters, with one notable exception: braced initializers. This example
+demonstrates how ``auto`` deduces types for different initializers, including
+the special behavior of ``auto&&`` as a universal reference. Understanding
+these rules is essential for writing modern C++ code that leverages type
+inference effectively:
+
+.. code-block:: cpp
+
+    int main() {
+      auto x = 123;        // int
+      const auto cx = x;   // const int
+      const auto& rx = x;  // const int&
+
+      auto&& urx = x;   // int& (x is lvalue)
+      auto&& urcx = cx; // const int& (cx is lvalue)
+      auto&& urrx = rx; // const int& (rx is lvalue)
+      auto&& urrv = 12; // int&& (12 is rvalue)
+    }
+
+decltype(auto) Type Deduction
+-----------------------------
+
+Unlike ``auto``, ``decltype(auto)`` preserves the exact type including
+references and cv-qualifiers. This distinction is critical when the original
+type information must be retained, such as when forwarding return values
+from wrapped functions. While ``auto`` applies template argument deduction
+rules (which strip references), ``decltype(auto)`` applies ``decltype``
+semantics to the initializer expression.
+
+The first example contrasts ``decltype(auto)`` with ``auto``. Note how
+``auto`` strips the reference and const from ``crx``, producing a plain ``int``,
+while ``decltype(auto)`` preserves the full ``const int&`` type. Similarly,
+``decltype(auto)`` preserves rvalue references, which ``auto`` would decay
+to a value type:
 
 .. code-block:: cpp
 
     #include <type_traits>
 
-    auto foo(const int &x) {
-      return x;
+    int main(int argc, char *argv[]) {
+      int x = 0;
+      const int cx = x;
+      const int& crx = x;
+      int&& z = 0;
+
+      // decltype(auto) preserves cv-qualifiers and references
+      decltype(auto) y1 = crx;
+      static_assert(std::is_same_v<const int&, decltype(y1)>);
+
+      // auto strips cv-qualifiers and references
+      auto y2 = crx;
+      static_assert(std::is_same_v<int, decltype(y2)>);
+
+      // decltype(auto) preserves rvalue references
+      decltype(auto) z1 = std::move(z);
+      static_assert(std::is_same_v<int&&, decltype(z1)>);
     }
 
-    decltype(auto) bar(const int &x) {
-      return x;
+**Application in return type deduction:**
+
+This behavior is particularly useful for generic functions that must preserve
+the exact return type of an expression. In this example, ``foo`` uses ``auto``
+return type deduction, which strips the reference and returns by value. In
+contrast, ``bar`` uses ``decltype(auto)``, preserving the ``const int&`` return
+type. This distinction matters for performance (avoiding copies) and semantics
+(maintaining reference semantics):
+
+.. code-block:: cpp
+
+    #include <type_traits>
+
+    auto foo(const int& x) {
+      return x;  // Returns int (reference stripped)
+    }
+
+    decltype(auto) bar(const int& x) {
+      return x;  // Returns const int& (reference preserved)
     }
 
     int main(int argc, char *argv[]) {
-      static_assert(std::is_same<int, decltype(foo(1))>::value == 1);
-      static_assert(std::is_same<const int &, decltype(bar(1))>::value == 1);
+      static_assert(std::is_same_v<int, decltype(foo(1))>);
+      static_assert(std::is_same_v<const int&, decltype(bar(1))>);
     }
 
-Reference Collapsing
---------------------
+Reference Collapsing Rules
+--------------------------
+
+When references to references occur during template instantiation or type
+aliasing, the compiler applies *reference collapsing* rules. These rules
+are fundamental to understanding how universal references and ``std::forward``
+work. In C++, you cannot directly declare a reference to a reference, but
+such types can arise indirectly through template instantiation or type aliases:
+
+.. code-block:: text
+
+    T& &   -> T&
+    T& &&  -> T&
+    T&& &  -> T&
+    T&& && -> T&&
+
+The rule can be summarized as: **lvalue reference always wins**. Only when
+both references are rvalue references does the result remain an rvalue reference.
+This mechanism enables perfect forwarding by allowing a single function template
+to handle both lvalues and rvalues correctly. When an lvalue is passed to a
+universal reference parameter, ``T`` deduces to an lvalue reference, and
+reference collapsing ensures the parameter type is also an lvalue reference.
+
+Perfect Forwarding with std::forward
+------------------------------------
+
+:Source: `src/basic/perfect-forwarding <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/perfect-forwarding>`_
+
+*Perfect forwarding* preserves the value category (lvalue/rvalue) of function
+arguments when passing them to other functions. This technique is essential
+for writing wrapper functions, factory functions, and generic code that must
+not alter the semantics of the forwarded arguments. Perfect forwarding combines
+universal references with ``std::forward`` and relies on the reference collapsing
+rules described above.
+
+**Implementation of std::forward:**
+
+The standard library's ``std::forward`` uses ``static_cast`` combined with
+reference collapsing to conditionally cast to an rvalue reference. The first
+overload handles lvalue arguments: when ``T`` is an lvalue reference type,
+``T&&`` collapses to an lvalue reference. The second overload handles rvalue
+arguments and includes a static assertion to prevent the dangerous operation
+of forwarding an rvalue as an lvalue:
 
 .. code-block:: cpp
 
-    // T& & -> T&
-    // T& && -> T&
-    // T&& & -> T&
-    // T&& && -> T&&
-    // note & always wins. that is T& && == T&& & == T& & == T&
-    // only T&& && == T&&
+    #include <type_traits>
 
-Perfect Forwarding
-------------------
+    template <typename T>
+    T&& forward(std::remove_reference_t<T>& t) noexcept {
+      return static_cast<T&&>(t);
+    }
+
+    template <typename T>
+    T&& forward(std::remove_reference_t<T>&& t) noexcept {
+      static_assert(!std::is_lvalue_reference_v<T>, "Cannot forward an rvalue as an lvalue.");
+      return static_cast<T&&>(t);
+    }
+
+**Practical usage:**
+
+This example demonstrates a wrapper function that forwards arguments to
+a callable while preserving their value category. When ``data`` (an lvalue)
+is passed, the template parameter ``T`` deduces to ``Data&``, and ``std::forward``
+returns an lvalue reference. When ``std::move(temp)`` is passed, ``T`` deduces
+to ``Data``, and ``std::forward`` returns an rvalue reference. This allows
+the lambda to receive the argument with the correct value category:
 
 .. code-block:: cpp
 
     #include <iostream>
     #include <utility>
-    #include <type_traits>
-
-    template <typename T>
-    T&& forward(typename std::remove_reference<T>::type& t) noexcept {
-      std::cout << std::is_lvalue_reference<decltype(t)>::value << std::endl;
-      return static_cast<T&&>(t);
-    }
-
-    template <typename T>
-    T&& forward(typename std::remove_reference<T>::type&& t) noexcept {
-      static_assert(
-        !std::is_lvalue_reference<T>::value,
-        "Can not forward an rvalue as an lvalue."
-      );
-      std::cout << std::is_lvalue_reference<decltype(t)>::value << std::endl;
-      return static_cast<T&&>(t);
-    }
-
-    int main (int argc, char *argv[])
-    {
-      int a = 0;
-      forward<int>(a);     // forward lvalues to rvalues
-      forward<int>(9527);  // forward rvalues to rvalues
-      return 0;
-    }
-
-.. code-block:: cpp
-
-    #include <iostream>
-    #include <utility>
-    #include <type_traits>
 
     template <typename T, typename Func>
-    void wrapper(T &&a, Func fn) {
-      fn(std::forward<T>(a)); // forward lvalue to lvalues or rvalues
+    void wrapper(T&& arg, Func fn) {
+      fn(std::forward<T>(arg));
     }
 
-    struct Foo {
-      Foo(int a1, int a2) : a(a1), b(a2), ret(0) {}
-      int a, b, ret;
+    struct Data {
+      Data(int a, int b) : x(a), y(b), result(0) {}
+      int x, y, result;
     };
 
-    int main (int argc, char *argv[])
-    {
-      Foo foo{1, 2};
-      Foo &bar = foo;
-      Foo &&baz = Foo(5, 6);
+    int main(int argc, char *argv[]) {
+      Data data{1, 2};
 
-      wrapper(foo, [](Foo foo) {
-        foo.ret =  foo.a + foo.b;
-        return foo.ret;
-      });
-      std::cout << foo.ret << std::endl;
+      // Forward as lvalue reference
+      wrapper(data, [](Data& d) { d.result = d.x + d.y; });
+      std::cout << data.result << "\n";  // Output: 3
 
-      wrapper(bar, [](Foo &foo) {
-        foo.ret = foo.a - foo.b;
-        return foo.ret;
-      });
-      std::cout << bar.ret << std::endl;
-
-      // move an rvalue to lvalue
-      wrapper(std::move(baz), [](Foo &&foo) {
-        foo.ret = foo.a * foo.b;
-        return foo.ret;
-      });
-      std::cout << baz.ret << std::endl;
-      return 0;
+      // Forward as rvalue reference
+      Data temp{5, 6};
+      wrapper(std::move(temp), [](Data&& d) { d.result = d.x * d.y; });
+      std::cout << temp.result << "\n";  // Output: 30
     }
 
-Bit Manipulation
-----------------
+Bit Manipulation with std::bitset
+---------------------------------
+
+:Source: `src/basic/bit-manipulation <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/bit-manipulation>`_
+
+The ``std::bitset`` class template provides a fixed-size sequence of bits
+with convenient member functions for bit manipulation. Unlike raw integer
+bit operations, ``std::bitset`` offers type safety, clear semantics, and
+bounds checking in debug builds. The template parameter specifies the number
+of bits, which is fixed at compile time.
+
+This example creates a 4-bit bitset initialized to 8 (binary ``1000``).
+The ``count()`` member function returns the number of set bits (population
+count), which is useful for algorithms that need to count flags or compute
+Hamming weights. The equality operator allows direct comparison with integer
+values, automatically handling the conversion:
 
 .. code-block:: cpp
 
-	#include <iostream>
-	#include <bitset>
+    #include <bitset>
+    #include <iostream>
 
-	int main(int argc, char *argv[]) {
-		std::bitset<4> b{8};
+    int main(int argc, char *argv[]) {
+      std::bitset<4> bits{0b1000};  // Binary: 1000
 
-		// show number of bits set
-		std::cout << b.count() << "\n";
-		// compare with int
-		std::cout << (b == 8) << "\n";
-	}
+      std::cout << bits.count() << "\n";  // Output: 1 (popcount)
+      std::cout << (bits == 8) << "\n";   // Output: 1 (true)
+    }
 
-Using ``std::addressof``
-------------------------
+Safe Address-of with std::addressof
+-----------------------------------
 
-Because C++ allows the overloading of ``operator &``, accessing the address of
-an reference will result in infinite recusion. Therefore, when it is necessary
-to access the address of reference, it would be safer by using ``std::addressof``.
+:Source: `src/basic/addressof <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/addressof>`_
+
+C++ permits overloading ``operator&``, which can interfere with obtaining
+an object's actual memory address. While overloading this operator is rare
+and generally discouraged, it does occur in some legacy codebases and smart
+pointer implementations. The ``std::addressof`` function template bypasses
+any overloaded ``operator&`` to return the true address, making it essential
+for generic code that must work with arbitrary types.
+
+In this example, the overloaded ``operator&`` could potentially return
+an arbitrary pointer (perhaps for proxy object patterns or debugging).
+Using ``std::addressof`` guarantees we obtain the object's actual memory
+location regardless of any operator overloading. This is particularly
+important in allocator implementations, container internals, and other
+low-level generic code:
 
 .. code-block:: cpp
 
     #include <iostream>
     #include <memory>
 
-    struct A {
-      int x;
+    struct Widget {
+      int value;
     };
 
-    const A *operator &(const A& a) {
-      // return &a; <- infinite recursion
-      return std::addressof(a);
+    const Widget* operator&(const Widget& w) {
+      // Custom behavior - could return anything
+      return std::addressof(w);  // Safe: returns actual address
     }
 
     int main(int argc, char *argv[]) {
-      A a;
-      std::cout << &a << "\n";
+      Widget w;
+      std::cout << &w << "\n";                // Uses overloaded operator&
+      std::cout << std::addressof(w) << "\n"; // Always returns true address
     }
+
+.. note::
+
+    Always use ``std::addressof`` in generic code where the type may have
+    an overloaded ``operator&``. The standard library containers and algorithms
+    use ``std::addressof`` internally for this reason.
