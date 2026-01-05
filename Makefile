@@ -19,6 +19,10 @@ test: build
 		name=$$(basename $$t); \
 		[ -x "$$t$$name" ] && "$$t$$name" || true; \
 	done
+	@for t in build/src/raii/*/; do \
+		name=$$(basename $$t); \
+		[ -x "$$t$$name" ] && "$$t$$name" || true; \
+	done
 
 pytest: clean docs
 	pycodestyle $(SRC)

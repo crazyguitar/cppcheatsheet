@@ -8,8 +8,7 @@ coroutines, ranges, and more. Essential for writing efficient and maintainable C
    :maxdepth: 1
 
    cpp_basic
-   cpp_constructor
-   cpp_initialization
+   cpp_raii
    cpp_string
    cpp_container
    cpp_iterator
