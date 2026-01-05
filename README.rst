@@ -35,7 +35,6 @@ Modern C++ Cheat Sheet
 - `Return Value Optimization <docs/notes/cpp/cpp_rvo.rst>`_
 - `Algorithm <docs/notes/cpp/cpp_algorithm.rst>`_
 - `Coroutine <docs/notes/cpp/cpp_coroutine.rst>`_
-- `Ranges <docs/notes/cpp/cpp_ranges.rst>`_
 
 System Programming Cheat Sheet
 ==============================
