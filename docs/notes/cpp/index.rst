@@ -16,8 +16,8 @@ coroutines, ranges, and more. Essential for writing efficient and maintainable C
    cpp_casting
    cpp_constexpr
    cpp_lambda
-   cpp_time
    cpp_smartpointers
    cpp_rvo
    cpp_algorithm
    cpp_coroutine
+   cpp_time
