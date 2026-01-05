@@ -1,3 +1,4 @@
 add_subdirectory(basic)
 add_subdirectory(raii)
 add_subdirectory(string)
+add_subdirectory(container)
