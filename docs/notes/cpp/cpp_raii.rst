@@ -11,11 +11,11 @@ acquires resources; when it is destroyed, it releases them. This pattern elimina
 resource leaks and ensures exception safety by leveraging C++'s deterministic
 destruction guarantees.
 
-Note that `Rust <https://www.rust-lang.org/>`_ enforces ownership at compile time, offering stronger safety guarantees
-than garbage-collected languages. Interestingly, Rust's ownership model closely
-resembles C++'s RAII and move semantics (available since C++11). For example, Rust's
-ownership transfer is analogous to ``std::move``, and its ``Drop`` trait mirrors C++
-destructors. This section explores these resource management techniques in depth.
+Note that `Rust <https://www.rust-lang.org/>`_ enforces ownership at compile time, offering strong safety guarantees. 
+Interestingly, Rust's ownership model closely resembles C++'s RAII and move semantics 
+(available since C++11). For example, Rust's ownership transfer is analogous to 
+``std::move``, and its ``Drop`` trait mirrors C++ destructors. This section explores 
+these resource management techniques in depth.
 
 
 Special Member Functions
