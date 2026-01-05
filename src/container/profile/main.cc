@@ -17,7 +17,7 @@ void profile(const char* label, F&& func) {
 
 constexpr int N = 100000;
 
-int main(int argc, char* argv[]) {
+int main() {
   std::cout << "=== push_back ===\n";
   profile("vector", [] {
     std::vector<int> v;

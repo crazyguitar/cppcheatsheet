@@ -8,12 +8,12 @@ struct TypeCapture {
 };
 
 template <typename T>
-TypeCapture<T&> f_ref(T& param) noexcept {
+TypeCapture<T&> f_ref(T&) noexcept {
   return {};
 }
 
 template <typename T>
-TypeCapture<T&&> f_uref(T&& param) noexcept {
+TypeCapture<T&&> f_uref(T&&) noexcept {
   return {};
 }
 

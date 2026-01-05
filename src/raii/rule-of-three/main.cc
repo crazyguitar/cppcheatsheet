@@ -47,6 +47,7 @@ TEST(RuleOfThree, CopyAssignment) {
 
 TEST(RuleOfThree, SelfAssignment) {
   Buffer buf("hello", 6);
-  buf = buf;
+  Buffer* p = &buf;
+  buf = *p;  // Self-assignment through pointer
   EXPECT_STREQ(buf.data(), "hello");
 }

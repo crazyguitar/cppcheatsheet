@@ -4,8 +4,8 @@
 
 class Widget {
  public:
-  Widget(int a, double b) : used_initializer_list(false) {}
-  Widget(std::initializer_list<long double> il) : used_initializer_list(true) {}
+  Widget(int, double) : used_initializer_list(false) {}
+  Widget(std::initializer_list<long double>) : used_initializer_list(true) {}
   bool used_initializer_list;
 };
 

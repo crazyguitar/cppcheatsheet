@@ -56,7 +56,8 @@ TEST(MoveExchange, MoveAssignmentTransfersOwnership) {
 
 TEST(MoveExchange, SelfAssignmentSafe) {
   File f1("/tmp/exchange_test4.txt");
-  f1 = std::move(f1);
+  File* p = &f1;
+  f1 = std::move(*p);  // Self-move through pointer
   EXPECT_TRUE(f1.is_open());
 
   std::remove("/tmp/exchange_test4.txt");

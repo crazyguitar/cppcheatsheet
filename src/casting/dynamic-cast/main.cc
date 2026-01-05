@@ -10,7 +10,8 @@ struct Derived : public Base {
 
 TEST(DynamicCast, FailedDowncast) {
   Base b;
-  auto d = dynamic_cast<Derived*>(&b);
+  Base* bp = &b;  // Use pointer to avoid compile-time type knowledge
+  auto d = dynamic_cast<Derived*>(bp);
   EXPECT_EQ(d, nullptr);
 }
 
