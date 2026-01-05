@@ -13,8 +13,6 @@ coroutines, ranges, and more. Essential for writing efficient and maintainable C
    cpp_container
    cpp_iterator
    cpp_template
-   cpp_variadic
-   cpp_forwarding
    cpp_casting
    cpp_constexpr
    cpp_lambda

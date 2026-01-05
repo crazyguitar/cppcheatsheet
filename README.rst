@@ -25,8 +25,6 @@ Modern C++ Cheat Sheet
 - `Container <docs/notes/cpp/cpp_container.rst>`_
 - `Iterator <docs/notes/cpp/cpp_iterator.rst>`_
 - `Template <docs/notes/cpp/cpp_template.rst>`_
-- `Variadic <docs/notes/cpp/cpp_variadic.rst>`_
-- `Forwarding <docs/notes/cpp/cpp_forwarding.rst>`_
 - `Casting <docs/notes/cpp/cpp_casting.rst>`_
 - `Constexpr <docs/notes/cpp/cpp_constexpr.rst>`_
 - `Lambda <docs/notes/cpp/cpp_lambda.rst>`_

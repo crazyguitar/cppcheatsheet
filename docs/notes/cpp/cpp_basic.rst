@@ -434,8 +434,8 @@ The standard library's ``std::forward`` uses ``static_cast`` combined with
 reference collapsing to conditionally cast to an rvalue reference. The first
 overload handles lvalue arguments: when ``T`` is an lvalue reference type,
 ``T&&`` collapses to an lvalue reference. The second overload handles rvalue
-arguments and includes a static assertion to prevent the dangerous operation
-of forwarding an rvalue as an lvalue:
+arguments and includes a static assertion to prevent forwarding an rvalue
+as an lvalue:
 
 .. code-block:: cpp
 
@@ -448,18 +448,17 @@ of forwarding an rvalue as an lvalue:
 
     template <typename T>
     T&& forward(std::remove_reference_t<T>&& t) noexcept {
-      static_assert(!std::is_lvalue_reference_v<T>, "Cannot forward an rvalue as an lvalue.");
+      static_assert(!std::is_lvalue_reference_v<T>);
       return static_cast<T&&>(t);
     }
 
-**Practical usage:**
+**Wrapper function:**
 
 This example demonstrates a wrapper function that forwards arguments to
-a callable while preserving their value category. When ``data`` (an lvalue)
-is passed, the template parameter ``T`` deduces to ``Data&``, and ``std::forward``
-returns an lvalue reference. When ``std::move(temp)`` is passed, ``T`` deduces
-to ``Data``, and ``std::forward`` returns an rvalue reference. This allows
-the lambda to receive the argument with the correct value category:
+a callable while preserving their value category. When ``d`` (an lvalue)
+is passed, ``T`` deduces to ``Data&``, and ``std::forward`` returns an lvalue
+reference. When ``std::move(t)`` is passed, ``T`` deduces to ``Data``, and
+``std::forward`` returns an rvalue reference:
 
 .. code-block:: cpp
 
@@ -471,23 +470,60 @@ the lambda to receive the argument with the correct value category:
       fn(std::forward<T>(arg));
     }
 
-    struct Data {
-      Data(int a, int b) : x(a), y(b), result(0) {}
-      int x, y, result;
-    };
+    struct Data { int x, y, result; };
 
-    int main(int argc, char *argv[]) {
-      Data data{1, 2};
+    int main() {
+      Data d{1, 2, 0};
+      wrapper(d, [](Data& d) { d.result = d.x + d.y; });
+      std::cout << d.result << "\n";  // 3
 
-      // Forward as lvalue reference
-      wrapper(data, [](Data& d) { d.result = d.x + d.y; });
-      std::cout << data.result << "\n";  // Output: 3
-
-      // Forward as rvalue reference
-      Data temp{5, 6};
-      wrapper(std::move(temp), [](Data&& d) { d.result = d.x * d.y; });
-      std::cout << temp.result << "\n";  // Output: 30
+      Data t{5, 6, 0};
+      wrapper(std::move(t), [](Data&& d) { d.result = d.x * d.y; });
+      std::cout << t.result << "\n";  // 30
     }
+
+**Decorator pattern:**
+
+A timing decorator that wraps any callable and measures execution time while
+perfectly forwarding all arguments to the wrapped function:
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <utility>
+    #include <chrono>
+
+    template <typename Func, typename ...Args>
+    auto timed(Func &&f, Args&&... args) {
+      auto start = std::chrono::system_clock::now();
+      auto ret = f(std::forward<Args>(args)...);
+      std::chrono::duration<double> d = std::chrono::system_clock::now() - start;
+      std::cout << "Time: " << d.count() << "s\n";
+      return ret;
+    }
+
+    long fib(long n) { return n < 2 ? n : fib(n-1) + fib(n-2); }
+
+    int main() { timed(fib, 35); }
+
+**Factory pattern:**
+
+A generic factory function that constructs objects by forwarding arguments
+to constructors, preserving value categories for efficient object creation:
+
+.. code-block:: cpp
+
+    #include <memory>
+    #include <utility>
+
+    template <typename T, typename ...Args>
+    std::unique_ptr<T> make(Args&&... args) {
+      return std::make_unique<T>(std::forward<Args>(args)...);
+    }
+
+    struct Widget { int x; double y; };
+
+    int main() { auto w = make<Widget>(42, 3.14); }
 
 Bit Manipulation with std::bitset
 ---------------------------------
