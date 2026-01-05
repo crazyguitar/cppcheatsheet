@@ -20,8 +20,7 @@ Modern C++ Cheat Sheet
 ======================
 
 - `Modern C++ From Scratch <docs/notes/cpp/cpp_basic.rst>`_
-- `Constructor <docs/notes/cpp/cpp_constructor.rst>`_
-- `Initialization <docs/notes/cpp/cpp_initialization.rst>`_
+- `RAII <docs/notes/cpp/cpp_raii.rst>`_
 - `String <docs/notes/cpp/cpp_string.rst>`_
 - `Container <docs/notes/cpp/cpp_container.rst>`_
 - `Iterator <docs/notes/cpp/cpp_iterator.rst>`_
