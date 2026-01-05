@@ -19,6 +19,29 @@ The standard library defines **five iterator categories**, each building upon th
 capabilities of the previous one. Understanding these categories is essential
 for writing generic code and choosing the right algorithm for your container.
 
+.. list-table:: Iterator Categories Summary
+   :header-rows: 1
+   :widths: 20 45 35
+
+   * - Category
+     - Capabilities
+     - Example Containers
+   * - Input
+     - Read-only, single-pass, forward only (``++``, ``*``, ``==``)
+     - ``istream_iterator``
+   * - Output
+     - Write-only, single-pass, forward only (``++``, ``*=``)
+     - ``ostream_iterator``, ``back_inserter``
+   * - Forward
+     - Read/write, multi-pass, forward only (``++``)
+     - ``forward_list``, ``unordered_set``
+   * - Bidirectional
+     - Forward + backward (``++``, ``--``)
+     - ``list``, ``set``, ``map``
+   * - Random Access
+     - Bidirectional + arithmetic (``+``, ``-``, ``[]``)
+     - ``vector``, ``array``, ``deque``
+
 .. note::
 
     Iterator categories form a hierarchy: Random Access > Bidirectional > Forward > Input/Output.
