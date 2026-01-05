@@ -1,0 +1,7 @@
+add_subdirectory(unique-ptr)
+add_subdirectory(shared-ptr)
+add_subdirectory(weak-ptr)
+add_subdirectory(make-functions)
+add_subdirectory(custom-deleter)
+add_subdirectory(enable-shared-from-this)
+add_subdirectory(aliasing)
