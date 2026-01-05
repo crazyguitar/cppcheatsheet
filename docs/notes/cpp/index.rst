@@ -23,4 +23,3 @@ coroutines, ranges, and more. Essential for writing efficient and maintainable C
    cpp_rvo
    cpp_algorithm
    cpp_coroutine
-   cpp_ranges
