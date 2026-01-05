@@ -63,3 +63,16 @@ blockquote {
   background-color: transparent;
   border: none;
 }
+
+/* Remove table hover effects */
+table.table tbody tr:hover,
+table.table tbody tr.row-odd:hover,
+table.table tbody tr.row-even:hover {
+  background-color: transparent !important;
+}
+
+table.table tbody tr:hover td,
+table.table tbody tr.row-odd:hover td,
+table.table tbody tr.row-even:hover td {
+  background-color: transparent !important;
+}
