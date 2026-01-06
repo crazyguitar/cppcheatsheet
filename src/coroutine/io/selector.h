@@ -21,31 +21,21 @@
 #error "Unsupported platform"
 #endif
 
-namespace detail {
-
-class SelectorBase {
- public:
-  using ms = std::chrono::milliseconds;
-  virtual ~SelectorBase() = default;
-  [[nodiscard]] virtual std::vector<Event> Select(ms duration = ms{500}) = 0;
-  [[nodiscard]] virtual bool Stopped() const noexcept = 0;
-};
-
-}  // namespace detail
-
 #ifdef __linux__
 
 constexpr uint32_t kEventRead = EPOLLIN;
 constexpr uint32_t kEventWrite = EPOLLOUT;
 constexpr uint32_t kEventError = EPOLLERR | EPOLLHUP;
 
-class EpollSelector : public detail::SelectorBase, private NoCopy {
+class EpollSelector : private NoCopy {
  public:
-  EpollSelector();
-  ~EpollSelector() override;
+  using ms = std::chrono::milliseconds;
 
-  [[nodiscard]] std::vector<Event> Select(ms duration = ms{500}) override;
-  [[nodiscard]] bool Stopped() const noexcept override { return fds_.empty(); }
+  EpollSelector();
+  ~EpollSelector();
+
+  [[nodiscard]] std::vector<Event> Select(ms duration = ms{500});
+  [[nodiscard]] bool Stopped() const noexcept { return fds_.empty(); }
 
   template <typename E>
   void Join(E& e) noexcept {
@@ -79,13 +69,15 @@ constexpr int16_t kEventRead = EVFILT_READ;
 constexpr int16_t kEventWrite = EVFILT_WRITE;
 constexpr uint32_t kEventError = 4;
 
-class KQueueSelector : public detail::SelectorBase, private NoCopy {
+class KQueueSelector : private NoCopy {
  public:
-  KQueueSelector();
-  ~KQueueSelector() override;
+  using ms = std::chrono::milliseconds;
 
-  [[nodiscard]] std::vector<Event> Select(ms duration = ms{500}) override;
-  [[nodiscard]] bool Stopped() const noexcept override { return fds_.empty(); }
+  KQueueSelector();
+  ~KQueueSelector();
+
+  [[nodiscard]] std::vector<Event> Select(ms duration = ms{500});
+  [[nodiscard]] bool Stopped() const noexcept { return fds_.empty(); }
 
   template <typename E>
   void Join(E& e) noexcept {

@@ -53,7 +53,7 @@ class Client : private NoCopy {
       /** @brief Unregister from epoll after connection completes */
       void await_resume() noexcept {
         auto& io = IO::Get();
-        io.Quit<Selector>(event);
+        io.Quit(event);
       }
 
       /**
@@ -65,7 +65,7 @@ class Client : private NoCopy {
         auto& io = IO::Get();
         event.handle = &coroutine.promise();
         event.flags = kEventWrite;
-        io.Join<Selector>(event);
+        io.Join(event);
         return true;
       }
     };

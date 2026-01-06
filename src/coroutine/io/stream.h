@@ -307,7 +307,7 @@ class Stream : public Event, private NoCopy {
   void Join() {
     if (!registered_ && fd >= 0) {
       auto& io = IO::Get();
-      io.Join<Selector>(*this);
+      io.Join(*this);
       registered_ = true;
     }
   }
@@ -320,12 +320,12 @@ class Stream : public Event, private NoCopy {
     if (fd >= 0) {
       auto& io = IO::Get();
       if (registered_) {
-        io.Quit<Selector>(*this);
+        io.Quit(*this);
         registered_ = false;
       }
       auto saved_flags = flags;
       flags = kEventWrite;
-      io.Join<Selector>(*this);
+      io.Join(*this);
       flags = saved_flags;
       registered_ = true;
     }
@@ -340,11 +340,11 @@ class Stream : public Event, private NoCopy {
       if (registered_) {
         auto saved_flags = flags;
         flags = kEventWrite;
-        io.Quit<Selector>(*this);
+        io.Quit(*this);
         flags = saved_flags;
         registered_ = false;
       }
-      io.Join<Selector>(*this);
+      io.Join(*this);
       registered_ = true;
     }
   }
@@ -357,7 +357,7 @@ class Stream : public Event, private NoCopy {
   void Quit() noexcept {
     if (registered_ && fd >= 0) {
       auto& io = IO::Get();
-      io.Quit<Selector>(*this);
+      io.Quit(*this);
       registered_ = false;
     }
   }

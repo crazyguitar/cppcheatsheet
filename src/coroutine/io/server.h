@@ -255,7 +255,7 @@ class Server : private NoCopy {
   void Quit(int fd) {
     auto& io = IO::Get();
     Stream stream{fd};
-    io.Quit<Selector>(stream);
+    io.Quit(stream);
   }
 
  private:

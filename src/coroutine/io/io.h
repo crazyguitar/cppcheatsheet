@@ -43,7 +43,7 @@ class IO : private NoCopy {
   /// Non-blocking poll timeout when tasks are ready for execution
   static constexpr milliseconds kNonBlockingPollTimeout{0};
 
-  IO() : start_{std::chrono::system_clock::now()}, selector_{std::make_unique<Selector>()} {}
+  IO() : start_{std::chrono::system_clock::now()} {}
 
   /**
    * @brief Get singleton IO instance
@@ -143,7 +143,7 @@ class IO : private NoCopy {
    * with events that occurred during the poll.
    */
   void Select(milliseconds timeout = kDefaultPollTimeout) {
-    const auto events = selector_->Select(timeout);
+    const auto events = selector_.Select(timeout);
     for (const auto& e : events) {
       if (auto* h = e.handle) [[likely]] {
         Call(*h);
@@ -208,48 +208,32 @@ class IO : private NoCopy {
    * @brief Check if event loop should stop
    * @return true if no pending tasks, ready tasks, or I/O events
    */
-  [[nodiscard]] bool Stopped() const noexcept { return schedule_.empty() && ready_.empty() && selector_->Stopped(); }
+  [[nodiscard]] bool Stopped() const noexcept { return schedule_.empty() && ready_.empty() && selector_.Stopped(); }
 
   /**
-   * @brief Set the selector implementation
-   * @param selector Unique pointer to the new selector implementation
-   *
-   * Replaces the current I/O event selector. Useful for testing or
-   * using alternative multiplexing backends.
-   */
-  void Set(std::unique_ptr<detail::SelectorBase> selector) noexcept { selector_ = std::move(selector); }
-
-  /**
-   * @brief Get the selector cast to a specific type
-   * @tparam S Selector type to cast to
+   * @brief Get the selector
    * @return Reference to the selector
    */
-  template <typename S>
-  [[nodiscard]] S& GetSelector() noexcept {
-    return *static_cast<S*>(selector_.get());
-  }
+  [[nodiscard]] Selector& GetSelector() noexcept { return selector_; }
 
   /**
    * @brief Register an event source with the selector
-   * @tparam S Selector type
    * @tparam P Event source type
    * @param p Event source to monitor
-   * @return Result from selector's Join (if any)
    */
-  template <typename S, typename P>
-  decltype(auto) Join(P& p) {
-    return GetSelector<S>().Join(p);
+  template <typename P>
+  void Join(P& p) {
+    selector_.Join(p);
   }
 
   /**
    * @brief Unregister an event source from the selector
-   * @tparam S Selector type
    * @tparam P Event source type
    * @param p Event source to stop monitoring
    */
-  template <typename S, typename P>
+  template <typename P>
   void Quit(P& p) {
-    GetSelector<S>().Quit(p);
+    selector_.Quit(p);
   }
 
   /**
@@ -284,7 +268,7 @@ class IO : private NoCopy {
    */
   [[nodiscard]] bool IsHandleCancelled(uint64_t id) const noexcept { return cancelled_.find(id) != cancelled_.end(); }
   std::chrono::time_point<std::chrono::system_clock> start_;
-  std::unique_ptr<detail::SelectorBase> selector_;
+  Selector selector_;
   priority_queue schedule_;
   std::deque<Handle*> ready_;
   std::deque<Handle*> stopped_;
