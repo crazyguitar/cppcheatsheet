@@ -9,14 +9,21 @@ Bash Basic Cheatsheet
 .. contents:: Table of Contents
     :backlinks: none
 
-An interactive demo script is available at ``src/bash/basic.sh`` to help you experiment
-with the concepts covered in this cheatsheet. Run it with:
+This cheatsheet provides a comprehensive reference for Bash shell scripting, covering
+essential concepts from basic variable expansion to advanced text processing and error
+handling. Each section includes practical examples that demonstrate real-world usage
+patterns commonly encountered in automation scripts and system administration tasks.
+
+An interactive demo script is available at `src/bash/basic.sh <https://github.com/crazyguitar/cppcheatsheet/blob/master/src/bash/basic.sh>`_
+to help you experiment with the concepts covered in this cheatsheet. The script provides
+colorized output showing both the commands and their results, making it easier to
+understand how each feature works.
 
 .. code-block:: bash
 
     ./src/bash/basic.sh           # Run all demos
-    ./src/bash/basic.sh strings   # Run specific section
-    ./src/bash/basic.sh --help    # Show available sections
+    ./src/bash/basic.sh strings   # Run specific section (e.g., strings, arrays, regex)
+    ./src/bash/basic.sh --help    # Show all available sections
 
 Special Parameters
 ------------------

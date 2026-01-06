@@ -55,12 +55,7 @@ Shell
 - `Bash From Scratch <docs/notes/tools/bash_basic.rst>`_
 - `Bash Date <docs/notes/tools/bash_date.rst>`_
 - `Bash Find <docs/notes/tools/bash_find.rst>`_
-- `Bash Regular Expression <docs/notes/tools/bash_re.rst>`_
 - `Operating System <docs/notes/tools/bash_os.rst>`_
-
-Systemd
-=======
-
 - `Systemd <docs/notes/tools/systemd.rst>`_
 
 GNU Debugger
