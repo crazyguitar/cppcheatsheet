@@ -58,9 +58,6 @@ commands is essential for Linux system administration.
     $ systemctl list-units --state=failed     # failed units
     $ systemctl list-unit-files               # all installed unit files
 
-    # List timers
-    $ systemctl list-timers --all
-
     # Show unit dependencies
     $ systemctl list-dependencies app.service
 
@@ -201,13 +198,48 @@ timers can trigger on boot, on service activation, or on calendar schedules.
 Each timer requires a matching service file with the same base name (e.g.,
 ``backup.timer`` triggers ``backup.service``).
 
+Managing Timers
+~~~~~~~~~~~~~~~
+
+.. code-block:: bash
+
+    # List all active timers with next/last run times
+    $ systemctl list-timers
+
+    # List all timers including inactive
+    $ systemctl list-timers --all
+
+    # Show when a specific timer will next execute
+    $ systemctl list-timers backup.timer
+
+    # Example output:
+    # NEXT                        LEFT          LAST                        PASSED       UNIT           ACTIVATES
+    # Mon 2024-01-08 02:00:00 UTC 5h left       Sun 2024-01-07 02:00:00 UTC 18h ago      backup.timer   backup.service
+
+    # Enable and start a timer
+    $ systemctl enable backup.timer
+    $ systemctl start backup.timer
+
+    # Check timer status
+    $ systemctl status backup.timer
+
+    # Manually trigger the associated service (for testing)
+    $ systemctl start backup.service
+
+    # View timer logs
+    $ journalctl -u backup.timer
+    $ journalctl -u backup.service
+
+Timer Unit Example
+~~~~~~~~~~~~~~~~~~
+
 .. code-block:: ini
 
     # /etc/systemd/system/backup.timer
     #
+    # $ systemctl daemon-reload
     # $ systemctl enable backup.timer
     # $ systemctl start backup.timer
-    # $ systemctl list-timers
 
     [Unit]
     Description=Daily backup timer
