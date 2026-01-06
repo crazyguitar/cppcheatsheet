@@ -33,6 +33,7 @@ Modern C++ Cheat Sheet
 - `Return Value Optimization <docs/notes/cpp/cpp_rvo.rst>`_
 - `Algorithm <docs/notes/cpp/cpp_algorithm.rst>`_
 - `Coroutine <docs/notes/cpp/cpp_coroutine.rst>`_
+- `CMake <docs/notes/cpp/cpp_cmake.rst>`_
 
 System Programming Cheat Sheet
 ==============================
@@ -41,13 +42,6 @@ System Programming Cheat Sheet
 - `Signal <docs/notes/os/os_signal.rst>`_
 - `Socket <docs/notes/os/os_socket.rst>`_
 - `Concurrency <docs/notes/os/os_concurrency.rst>`_
-
-CMake
-=====
-
-- `CMake <docs/notes/cmake/cmake_basic.rst>`_
-- `Package <docs/notes/cmake/cmake_package.rst>`_
-- `External Project <docs/notes/cmake/cmake_external.rst>`_
 
 Shell
 =====
