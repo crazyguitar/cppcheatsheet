@@ -18,8 +18,9 @@ class Timer {
 
 TEST(Timer, MeasuresElapsed) {
   Timer t;
-  volatile int sum = 0;
+  int sum = 0;
   for (int i = 0; i < 1000; ++i) sum += i;
   auto elapsed = t.elapsed();
   EXPECT_GE(elapsed.count(), 0);
+  EXPECT_EQ(sum, 499500);  // Prevent optimization
 }

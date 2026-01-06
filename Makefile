@@ -1,6 +1,6 @@
 REQUIREMENT = requirements.txt
 
-VER  = $(word 2, $(shell python --version 2>&1))
+VER  = $(word 2, $(shell python3 --version 2>&1))
 SRC  = app.py app_test.py
 PY36 = $(shell expr $(VER) \>= 3.6)
 
@@ -15,14 +15,7 @@ build:
 	./build.sh
 
 test: build
-	@for t in build/src/basic/*/; do \
-		name=$$(basename $$t); \
-		[ -x "$$t$$name" ] && "$$t$$name" || true; \
-	done
-	@for t in build/src/raii/*/; do \
-		name=$$(basename $$t); \
-		[ -x "$$t$$name" ] && "$$t$$name" || true; \
-	done
+	cd build && ctest --output-on-failure
 
 pytest: clean docs
 	pycodestyle $(SRC)
