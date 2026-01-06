@@ -1,6 +1,6 @@
-====================
+======================
 Bash Basic Cheatsheet
-====================
+======================
 
 .. meta::
    :description: Comprehensive Bash scripting reference covering variables, arrays, string manipulation, conditionals, loops, functions, regex, text processing, and error handling for Linux/Unix shell programming.
@@ -14,16 +14,16 @@ essential concepts from basic variable expansion to advanced text processing and
 handling. Each section includes practical examples that demonstrate real-world usage
 patterns commonly encountered in automation scripts and system administration tasks.
 
-An interactive demo script is available at `src/bash/basic.sh <https://github.com/crazyguitar/cppcheatsheet/blob/master/src/bash/basic.sh>`_
+An interactive demo script is available at `src/bash/bash.sh <https://github.com/crazyguitar/cppcheatsheet/blob/master/src/bash/bash.sh>`_
 to help you experiment with the concepts covered in this cheatsheet. The script provides
 colorized output showing both the commands and their results, making it easier to
 understand how each feature works.
 
 .. code-block:: bash
 
-    ./src/bash/basic.sh           # Run all demos
-    ./src/bash/basic.sh strings   # Run specific section (e.g., strings, arrays, regex)
-    ./src/bash/basic.sh --help    # Show all available sections
+    ./src/bash/bash.sh           # Run all demos
+    ./src/bash/bash.sh strings   # Run specific section (e.g., strings, arrays, regex)
+    ./src/bash/bash.sh --help    # Show all available sections
 
 Special Parameters
 ------------------

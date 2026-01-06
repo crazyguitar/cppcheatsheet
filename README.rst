@@ -52,10 +52,11 @@ CMake
 Shell
 =====
 
-- `Bash From Scratch <docs/notes/tools/bash_basic.rst>`_
-- `Bash Date <docs/notes/tools/bash_date.rst>`_
-- `Bash Find <docs/notes/tools/bash_find.rst>`_
-- `Operating System <docs/notes/tools/bash_os.rst>`_
+- `Bash From Scratch <docs/notes/tools/bash.rst>`_
+- `Operating System <docs/notes/tools/os.rst>`_
+- `Network <docs/notes/tools/net.rst>`_
+- `Hardware <docs/notes/tools/hardware.rst>`_
+- `GPU <docs/notes/tools/gpu.rst>`_
 - `Systemd <docs/notes/tools/systemd.rst>`_
 
 GNU Debugger
