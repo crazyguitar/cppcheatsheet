@@ -38,3 +38,7 @@ format:
 clean:
 	rm -rf build
 	cd docs && make clean
+
+.PHONY: sqush
+sqush: clean
+	./enroot.sh -n cuda -f ${PWD}/Dockerfile
