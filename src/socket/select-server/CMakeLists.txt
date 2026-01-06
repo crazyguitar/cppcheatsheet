@@ -1,0 +1,3 @@
+add_executable(select_server_test main.cc)
+target_link_libraries(select_server_test GTest::gtest_main)
+gtest_discover_tests(select_server_test)
