@@ -2,6 +2,10 @@
 Lambda
 ======
 
+.. meta::
+   :description: C++ lambda expression guide covering syntax, captures, generic lambdas, and practical use cases with examples.
+   :keywords: C++, lambda, closure, capture, anonymous function, C++11, C++14, C++17, C++20, generic lambda
+
 .. contents:: Table of Contents
     :backlinks: none
 

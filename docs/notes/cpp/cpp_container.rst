@@ -2,6 +2,10 @@
 Container
 =========
 
+.. meta::
+   :description: C++ STL container reference covering vector, map, set, list, deque, array, and unordered containers with examples.
+   :keywords: C++, STL, container, vector, map, set, list, deque, array, unordered_map, unordered_set
+
 .. contents:: Table of Contents
     :backlinks: none
 

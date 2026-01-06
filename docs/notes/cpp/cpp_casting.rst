@@ -2,6 +2,10 @@
 Casting
 =======
 
+.. meta::
+   :description: C++ type casting guide covering static_cast, dynamic_cast, const_cast, reinterpret_cast with examples and best practices.
+   :keywords: C++, casting, static_cast, dynamic_cast, const_cast, reinterpret_cast, type conversion
+
 .. contents:: Table of Contents
     :backlinks: none
 

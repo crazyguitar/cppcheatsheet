@@ -2,6 +2,10 @@
 Template
 ===================
 
+.. meta::
+   :description: C++ template programming guide covering function templates, class templates, variadic templates, SFINAE, and concepts.
+   :keywords: C++, template, generic programming, variadic template, SFINAE, concepts, template specialization, metaprogramming
+
 .. contents:: Table of Contents
     :backlinks: none
 

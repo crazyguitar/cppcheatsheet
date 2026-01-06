@@ -2,6 +2,10 @@
 Iterator
 ========
 
+.. meta::
+   :description: C++ iterator tutorial covering iterator categories, operations, adapters, and custom iterator implementation.
+   :keywords: C++, iterator, STL, input iterator, output iterator, forward iterator, bidirectional, random access
+
 .. contents:: Table of Contents
     :backlinks: none
 

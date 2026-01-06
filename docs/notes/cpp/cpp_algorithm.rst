@@ -2,6 +2,10 @@
 Algorithm
 =========
 
+.. meta::
+   :description: C++ STL algorithm reference with examples for sorting, searching, transforming, and manipulating containers.
+   :keywords: C++, STL, algorithm, sort, find, transform, copy, remove, unique, binary_search
+
 .. contents:: Table of Contents
     :backlinks: none
 

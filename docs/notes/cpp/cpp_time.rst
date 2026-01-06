@@ -2,6 +2,10 @@
 Time
 ====
 
+.. meta::
+   :description: C++ chrono library guide covering duration, time_point, clocks, and date/time manipulation with examples.
+   :keywords: C++, chrono, time, duration, time_point, clock, steady_clock, system_clock, date, C++11, C++20
+
 .. contents:: Table of Contents
     :backlinks: none
 

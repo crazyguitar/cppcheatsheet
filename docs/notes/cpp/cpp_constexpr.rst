@@ -2,6 +2,10 @@
 Constexpr
 =========
 
+.. meta::
+   :description: C++ constexpr tutorial for compile-time computation, constexpr functions, variables, and if constexpr with examples.
+   :keywords: C++, constexpr, compile-time, constant expression, consteval, if constexpr, C++11, C++14, C++17, C++20
+
 .. contents:: Table of Contents
     :backlinks: none
 

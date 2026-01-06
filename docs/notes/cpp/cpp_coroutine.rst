@@ -2,6 +2,10 @@
 Coroutine
 =========
 
+.. meta::
+   :description: C++20 coroutine tutorial covering co_await, co_yield, co_return, promise types, awaiters, generators, and async I/O with practical examples.
+   :keywords: C++, C++20, coroutine, co_await, co_yield, co_return, async, asynchronous, promise type, awaiter, generator, tutorial
+
 .. contents:: Table of Contents
     :backlinks: none
 

@@ -2,6 +2,10 @@
 Return Value Optimization (RVO)
 ===============================
 
+.. meta::
+   :description: C++ RVO and NRVO explained with examples showing copy elision, move semantics, and compiler optimizations.
+   :keywords: C++, RVO, NRVO, return value optimization, copy elision, move semantics, optimization
+
 .. contents:: Table of Contents
     :backlinks: none
 

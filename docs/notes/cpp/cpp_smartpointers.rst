@@ -2,6 +2,10 @@
 Smart Pointers
 ==============
 
+.. meta::
+   :description: C++ smart pointer guide covering unique_ptr, shared_ptr, weak_ptr with ownership semantics and best practices.
+   :keywords: C++, smart pointer, unique_ptr, shared_ptr, weak_ptr, memory management, RAII, ownership
+
 .. contents:: Table of Contents
     :backlinks: none
 

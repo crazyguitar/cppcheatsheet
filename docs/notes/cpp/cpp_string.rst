@@ -2,6 +2,10 @@
 String
 ======
 
+.. meta::
+   :description: C++ string handling guide covering std::string, string_view, character operations, and string manipulation.
+   :keywords: C++, string, std::string, string_view, char, wstring, string manipulation, substring
+
 .. contents:: Table of Contents
     :backlinks: none
 

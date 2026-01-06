@@ -2,6 +2,10 @@
 Resource Management
 ===================
 
+.. meta::
+   :description: C++ RAII pattern guide for resource management, covering constructors, destructors, and exception-safe code.
+   :keywords: C++, RAII, resource management, constructor, destructor, exception safety, scope guard
+
 .. contents:: Table of Contents
     :backlinks: none
 

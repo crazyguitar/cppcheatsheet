@@ -2,6 +2,10 @@
 Fundamentals Reference
 ======================
 
+.. meta::
+   :description: C++ fundamentals covering syntax, types, operators, control flow, functions, classes, and memory management basics.
+   :keywords: C++, basics, fundamentals, syntax, types, operators, functions, classes, pointers, references
+
 .. contents:: Table of Contents
     :backlinks: none
 
