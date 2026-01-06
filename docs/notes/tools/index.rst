@@ -21,6 +21,5 @@ administration and development automation.
    bash_basic
    bash_date
    bash_find
-   bash_re
    bash_os
    systemd
