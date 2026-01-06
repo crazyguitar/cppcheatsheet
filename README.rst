@@ -37,10 +37,10 @@ Modern C++ Cheat Sheet
 System Programming Cheat Sheet
 ==============================
 
-- `File I/O <docs/notes/c/c_file.rst>`_
-- `Signal <docs/notes/c/c_signal.rst>`_
-- `Socket <docs/notes/c/c_socket.rst>`_
-- `Concurrency <docs/notes/c/c_concurrency.rst>`_
+- `File I/O <docs/notes/os/os_file.rst>`_
+- `Signal <docs/notes/os/os_signal.rst>`_
+- `Socket <docs/notes/os/os_socket.rst>`_
+- `Concurrency <docs/notes/os/os_concurrency.rst>`_
 
 CMake
 =====
@@ -52,19 +52,19 @@ CMake
 Shell
 =====
 
-- `Bash From Scratch <docs/notes/bash/bash_basic.rst>`_
-- `Bash Date <docs/notes/bash/bash_date.rst>`_
-- `Bash Find <docs/notes/bash/bash_find.rst>`_
-- `Bash Regular Expression <docs/notes/bash/bash_re.rst>`_
-- `Operating System <docs/notes/bash/bash_os.rst>`_
+- `Bash From Scratch <docs/notes/tools/bash_basic.rst>`_
+- `Bash Date <docs/notes/tools/bash_date.rst>`_
+- `Bash Find <docs/notes/tools/bash_find.rst>`_
+- `Bash Regular Expression <docs/notes/tools/bash_re.rst>`_
+- `Operating System <docs/notes/tools/bash_os.rst>`_
+
+Systemd
+=======
+
+- `Systemd <docs/notes/tools/systemd.rst>`_
 
 GNU Debugger
 ============
 
 - `GDB <docs/notes/debug/gdb_debug.rst>`_
 - `Perf <docs/notes/debug/perf.rst>`_
-
-Systemd
-=======
-
-- `Systemd <docs/notes/os/systemd.rst>`_

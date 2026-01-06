@@ -18,7 +18,7 @@ Contributions are welcome—feel free to share ideas for new snippets, improveme
 
    notes/c/index
    notes/cpp/index
-   notes/bash/index
-   notes/cmake/index
-   notes/debug/index
    notes/os/index
+   notes/cmake/index
+   notes/tools/index
+   notes/debug/index
