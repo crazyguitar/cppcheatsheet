@@ -71,6 +71,27 @@ kernel, potentially accessing results before they're ready.
     hello_kernel<<<2, 4>>>(d_output);
     cudaDeviceSynchronize();  // Wait for kernel to complete
 
+Function Qualifiers
+-------------------
+
+CUDA provides function qualifiers to specify where functions execute and where
+they can be called from. Understanding these is essential for organizing code
+between host and device.
+
+.. code-block:: cuda
+
+    // __device__ - Device function: called from device, runs on device
+    __device__ float square(float x) { return x * x; }
+
+    // __host__ __device__ - Compiles for both host and device
+    __host__ __device__ float add(float a, float b) { return a + b; }
+
+    // __global__ - Kernel function: called from host, runs on device
+    __global__ void compute(float* out, float a, float b) {
+      out[0] = add(a, b);     // Call __host__ __device__ function
+      out[1] = square(a);     // Call __device__ function
+    }
+
 Vector Addition
 ---------------
 

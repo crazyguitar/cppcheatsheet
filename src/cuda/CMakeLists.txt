@@ -3,6 +3,10 @@ if(ENABLE_CUDA)
   set(CMAKE_CUDA_STANDARD 17)
   set(CMAKE_CUDA_ARCHITECTURES native)
 
+  add_executable(cuda-function-qualifiers function-qualifiers/main.cu)
+  target_link_libraries(cuda-function-qualifiers GTest::gtest_main)
+  gtest_discover_tests(cuda-function-qualifiers)
+
   add_executable(cuda-hello hello/main.cu)
   target_link_libraries(cuda-hello GTest::gtest_main)
   gtest_discover_tests(cuda-hello)
