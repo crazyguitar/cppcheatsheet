@@ -9,6 +9,75 @@ Cooperative Groups
 .. contents:: Table of Contents
     :backlinks: none
 
+Quick Reference
+---------------
+
+:Source: `src/cuda/coop-groups-cheatsheet <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/coop-groups-cheatsheet>`_
+
+.. code-block:: cuda
+
+    #include <cooperative_groups.h>
+    #include <cooperative_groups/reduce.h>
+    namespace cg = cooperative_groups;
+
+    __global__ void kernel() {
+      // Create groups
+      cg::thread_block block = cg::this_thread_block();           // All threads in block
+      cg::thread_block_tile<32> warp = cg::tiled_partition<32>(block);  // 32-thread warp
+      cg::thread_block_tile<4> tile = cg::tiled_partition<4>(warp);     // 4-thread tile
+      cg::coalesced_group active = cg::coalesced_threads();       // Currently active threads
+
+      // Group properties
+      block.size();          // Number of threads in group
+      block.thread_rank();   // Thread index within group (0 to size-1)
+      warp.meta_group_rank();    // Which warp in block (0, 1, 2, ...)
+      warp.meta_group_size();    // Number of warps in block
+
+      // Synchronization
+      block.sync();          // __syncthreads() equivalent
+      warp.sync();           // __syncwarp() equivalent
+      tile.sync();           // Sync 4 threads
+
+      // Collective reductions (all threads get result)
+      float sum = cg::reduce(warp, val, cg::plus<float>());    // Sum
+      float max = cg::reduce(warp, val, cg::greater<float>()); // Max
+      float min = cg::reduce(warp, val, cg::less<float>());    // Min
+      int all_and = cg::reduce(warp, bits, cg::bit_and<int>()); // Bitwise AND
+      int all_or = cg::reduce(warp, bits, cg::bit_or<int>());   // Bitwise OR
+      int all_xor = cg::reduce(warp, bits, cg::bit_xor<int>()); // Bitwise XOR
+
+      // Inclusive/Exclusive scan (prefix sum)
+      float incl = cg::inclusive_scan(warp, val, cg::plus<float>()); // [a, a+b, a+b+c, ...]
+      float excl = cg::exclusive_scan(warp, val, cg::plus<float>()); // [0, a, a+b, ...]
+
+      // Shuffle operations (data exchange within group)
+      float broadcasted = warp.shfl(val, 0);           // Broadcast from thread 0
+      float from_src = warp.shfl(val, src_lane);       // Get value from src_lane
+      float shifted = warp.shfl_down(val, 1);          // Shift values down by 1
+      float shifted_up = warp.shfl_up(val, 1);         // Shift values up by 1
+      float swapped = warp.shfl_xor(val, 1);           // XOR swap with neighbor
+
+      // Predicates (vote operations)
+      bool any_true = warp.any(predicate);       // True if any thread has predicate
+      bool all_true = warp.all(predicate);       // True if all threads have predicate
+      unsigned ballot = warp.ballot(predicate);  // Bitmask of predicate results
+
+      // Labeled partition (group threads by label value)
+      cg::coalesced_group same_label = cg::labeled_partition(warp, label);
+
+      // Thread indexing helpers
+      int global_idx = block.group_index().x * block.group_dim().x + block.thread_index().x;
+      dim3 block_idx = block.group_index();   // blockIdx equivalent
+      dim3 block_dim = block.group_dim();     // blockDim equivalent
+      dim3 thread_idx = block.thread_index(); // threadIdx equivalent
+
+      // Elect single thread (useful for single-thread work)
+      if (warp.thread_rank() == 0) { /* only one thread executes */ }
+
+      // Match threads with same value
+      unsigned match_mask = __match_any_sync(0xffffffff, value);  // Threads with same value
+    }
+
 Introduction
 ------------
 
@@ -146,15 +215,6 @@ Cooperative Groups provides built-in collective operations that work on any grou
       }
     }
 
-Available reduction operators:
-
-- ``cg::plus<T>()``: Addition
-- ``cg::less<T>()``: Minimum
-- ``cg::greater<T>()``: Maximum
-- ``cg::bit_and<T>()``: Bitwise AND
-- ``cg::bit_or<T>()``: Bitwise OR
-- ``cg::bit_xor<T>()``: Bitwise XOR
-
 Tiled Partition for Warp-Level Programming
 ------------------------------------------
 
@@ -165,6 +225,15 @@ programming. The tile size must be a power of 2 and at most 32.
 
 .. code-block:: cuda
 
+    // Helper function for manual warp/tile reduction
+    template <int TileSize, typename T>
+    __device__ T tile_reduce_sum(cg::thread_block_tile<TileSize>& tile, T val) {
+      for (int offset = tile.size() / 2; offset > 0; offset /= 2) {
+        val += tile.shfl_down(val, offset);
+      }
+      return val;  // Only thread 0 has correct result
+    }
+
     __global__ void warp_reduce(const float* input, float* output, int n) {
       cg::thread_block block = cg::this_thread_block();
       cg::thread_block_tile<32> warp = cg::tiled_partition<32>(block);
@@ -172,14 +241,10 @@ programming. The tile size must be a power of 2 and at most 32.
       int idx = blockIdx.x * blockDim.x + threadIdx.x;
       float val = (idx < n) ? input[idx] : 0.0f;
 
-      // Manual warp reduction using shuffle
-      for (int offset = warp.size() / 2; offset > 0; offset /= 2) {
-        val += warp.shfl_down(val, offset);
-      }
+      float sum = tile_reduce_sum(warp, val);
 
-      // Thread 0 of each warp writes result
       if (warp.thread_rank() == 0) {
-        output[blockIdx.x * (blockDim.x / 32) + warp.meta_group_rank()] = val;
+        output[blockIdx.x * (blockDim.x / 32) + warp.meta_group_rank()] = sum;
       }
     }
 
@@ -188,9 +253,27 @@ Coalesced Threads for Divergent Code
 
 :Source: `src/cuda/coop-groups-coalesced <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/coop-groups-coalesced>`_
 
-``coalesced_threads()`` creates a group from threads that are currently active
-(not diverged). This is useful when threads take different branches but still
-need to cooperate.
+When threads in a warp take different branches (e.g., ``if/else``), only some
+threads execute each branch. ``coalesced_threads()`` creates a group containing
+only the threads that reached that specific point in the code. This lets you
+perform collective operations (like reduce) on just those active threads, rather
+than the entire warp.
+
+.. code-block:: cuda
+
+    // Without coalesced_threads: must handle inactive threads manually
+    if (val > 0) {
+      atomicAdd(output, val);  // Each thread does atomic - slow!
+    }
+
+    // With coalesced_threads: reduce among active threads first
+    if (val > 0) {
+      cg::coalesced_group active = cg::coalesced_threads();  // Only threads where val > 0
+      int sum = cg::reduce(active, val, cg::plus<int>());    // Sum among active only
+      if (active.thread_rank() == 0) {
+        atomicAdd(output, sum);  // Single atomic - fast!
+      }
+    }
 
 .. code-block:: cuda
 
@@ -307,15 +390,15 @@ more granular control with acquire/release semantics.
 
 **Comparison:**
 
-+------------------------+------------------------+----------------------------------+
-| CUDA Built-in          | PTX Equivalent         | Use Case                         |
-+========================+========================+==================================+
-| ``__threadfence_block``| ``fence.acq_rel.cta``  | Shared memory sync within block  |
-+------------------------+------------------------+----------------------------------+
-| ``__threadfence``      | ``fence.acq_rel.gpu``  | Global memory sync across blocks |
-+------------------------+------------------------+----------------------------------+
-| ``__threadfence_system``| ``fence.acq_rel.sys`` | Multi-GPU or GPU-CPU sync        |
-+------------------------+------------------------+----------------------------------+
++--------------------------+------------------------+----------------------------------+
+| CUDA Built-in            | PTX Equivalent         | Use Case                         |
++==========================+========================+==================================+
+| ``__threadfence_block``  | ``fence.acq_rel.cta``  | Shared memory sync within block  |
++--------------------------+------------------------+----------------------------------+
+| ``__threadfence``        | ``fence.acq_rel.gpu``  | Global memory sync across blocks |
++--------------------------+------------------------+----------------------------------+
+| ``__threadfence_system`` | ``fence.acq_rel.sys``  | Multi-GPU or GPU-CPU sync        |
++--------------------------+------------------------+----------------------------------+
 
 The key difference is that PTX fences support explicit acquire/release semantics,
 while CUDA built-ins provide sequentially consistent fences. PTX also allows

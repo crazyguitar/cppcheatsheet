@@ -55,4 +55,8 @@ if(ENABLE_CUDA)
   add_executable(cuda-coop-groups-ptx coop-groups-ptx/main.cu)
   target_link_libraries(cuda-coop-groups-ptx GTest::gtest_main)
   gtest_discover_tests(cuda-coop-groups-ptx)
+
+  add_executable(cuda-coop-groups-cheatsheet coop-groups-cheatsheet/main.cu)
+  target_link_libraries(cuda-coop-groups-cheatsheet GTest::gtest_main)
+  gtest_discover_tests(cuda-coop-groups-cheatsheet)
 endif()
