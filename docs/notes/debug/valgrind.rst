@@ -3,8 +3,8 @@ Valgrind Reference
 ==================
 
 .. meta::
-   :description: Valgrind tutorial for memory leak detection, invalid memory access, use-after-free, cache profiling with Cachegrind, and call graph analysis with Callgrind in C/C++ programs.
-   :keywords: Valgrind tutorial, memcheck, memory leak detection, invalid memory access, use-after-free, double free, cachegrind, callgrind, helgrind, heap profiling, C++ memory debugging, Valgrind examples, uninitialized memory
+   :description: Valgrind tutorial for memory leak detection, heap profiling with Massif, cache profiling with Cachegrind, and call graph analysis with Callgrind in C/C++ programs.
+   :keywords: Valgrind tutorial, memcheck, memory leak detection, massif, heap profiling, heap histogram, cachegrind, callgrind, helgrind, C++ memory debugging, Valgrind examples
 
 .. contents:: Table of Contents
     :backlinks: none
@@ -177,6 +177,89 @@ Helgrind detects:
 - Lock order violations (potential deadlocks)
 - Misuse of pthread API (destroying locked mutex, unlocking unowned mutex)
 
+Massif: Heap Profiling
+----------------------
+
+Massif profiles heap memory usage over time, producing detailed snapshots that
+show which functions allocated memory and how usage changes throughout program
+execution. Unlike Memcheck which focuses on errors, Massif helps optimize memory
+consumption by identifying allocation hotspots and tracking peak usage. The
+output includes a text-based histogram showing memory usage over time, making it
+easy to spot memory growth patterns, temporary spikes, and potential optimization
+opportunities.
+
+.. code-block:: bash
+
+    $ valgrind --tool=massif ./myprogram
+    $ ms_print massif.out.<pid>
+
+Options:
+
+.. code-block:: bash
+
+    --heap=yes                    # profile heap (default)
+    --stacks=yes                  # also profile stack usage
+    --depth=10                    # allocation stack depth
+    --threshold=1.0               # min % to show in output
+    --time-unit=B                 # bytes allocated (default)
+    --time-unit=ms                # milliseconds
+    --time-unit=i                 # instructions executed
+    --massif-out-file=massif.out  # custom output file
+
+Example histogram output from ``ms_print``:
+
+.. code-block:: text
+
+    MB
+    6.5^                                                            #
+       |                                                           :#
+       |                                                         :::#
+       |                                                       :::::#
+       |                                                     :::::::@
+       |                                                   :::::::::@
+       |                                                 :::::::::::@
+       |                                               :::::::::::::@
+       |                                             :::::::::::::::@
+       |                                           :::::::::::::::::@
+       |                                         :::::::::::::::::::@
+       |                                       :::::::::::::::::::::@
+       |                                     :::::::::::::::::::::::@
+       |                                   :::::::::::::::::::::::::@
+       |                                 :::::::::::::::::::::::::::@
+       |                               :::::::::::::::::::::::::::::@
+       |                             :::::::::::::::::::::::::::::::@
+       |                           :::::::::::::::::::::::::::::::::@
+       |                         :::::::::::::::::::::::::::::::::::@
+       |                       :::::::::::::::::::::::::::::::::::::@
+     0 +--------------------------------------------------------------->Gi
+       0                                                             2.5
+
+The histogram shows memory usage (Y-axis) over time (X-axis). Each column
+represents a snapshot, with different characters indicating allocation sources:
+
+.. code-block:: text
+
+    #    Peak memory usage snapshot
+    @    Detailed snapshot (includes allocation tree)
+    :    Normal snapshot
+
+Detailed snapshot output shows allocation tree:
+
+.. code-block:: text
+
+    99.48% (6,400,000B) (heap allocation functions) malloc/new/new[]
+    ->49.74% (3,200,000B) 0x400620: load_data (main.c:25)
+    | ->49.74% (3,200,000B) 0x400700: main (main.c:50)
+    |
+    ->49.74% (3,200,000B) 0x400650: process_items (main.c:35)
+      ->49.74% (3,200,000B) 0x400720: main (main.c:55)
+
+For GUI visualization, use ``massif-visualizer``:
+
+.. code-block:: bash
+
+    $ massif-visualizer massif.out.<pid>
+
 Common Workflows
 ----------------
 
@@ -198,6 +281,13 @@ Common Workflows
 
     $ valgrind --tool=cachegrind ./myprogram
     $ cg_annotate --auto=yes cachegrind.out.*
+
+**Profile heap memory usage:**
+
+.. code-block:: bash
+
+    $ valgrind --tool=massif ./myprogram
+    $ ms_print massif.out.*
 
 **Generate call graph:**
 
