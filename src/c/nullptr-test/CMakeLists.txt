@@ -1,0 +1,3 @@
+add_executable(nullptr_test_test main.cc)
+target_link_libraries(nullptr_test_test GTest::gtest_main)
+gtest_discover_tests(nullptr_test_test)

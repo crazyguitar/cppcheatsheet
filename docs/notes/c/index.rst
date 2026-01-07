@@ -1,9 +1,9 @@
-C Programming
-=============
+Modern C Programming
+====================
 
 .. meta::
    :description: Comprehensive C programming reference covering language fundamentals, preprocessor macros, GNU extensions, Makefile build systems, and x86 assembly integration.
-   :keywords: C programming, C language, preprocessor macros, GNU C extensions, Makefile, x86 assembly, embedded systems, systems programming
+   :keywords: C programming, C11, C17, C23, modern C, preprocessor macros, GNU C extensions, Makefile, x86 assembly, embedded systems, systems programming
 
 Despite decades of evolution in programming languages, C remains the lingua franca of systems
 software, embedded development, and performance-critical applications. Its direct access to

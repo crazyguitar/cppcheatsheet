@@ -7,8 +7,8 @@ Documentation Status
 .. image:: https://zenodo.org/badge/53253009.svg
   :target: https://doi.org/10.5281/zenodo.15528895
 
-C Programming
-=============
+Modern C Programming
+====================
 
 - `From Scratch <docs/notes/c/c_basic.rst>`_
 - `GNU C Extension <docs/notes/c/c_gnuext.rst>`_

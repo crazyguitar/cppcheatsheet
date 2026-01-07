@@ -1,0 +1,3 @@
+add_executable(static_closure_test main.cc)
+target_link_libraries(static_closure_test GTest::gtest_main)
+gtest_discover_tests(static_closure_test)
