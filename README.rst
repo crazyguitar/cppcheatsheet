@@ -8,10 +8,7 @@ C/C++ Cheatsheet
 .. image:: https://zenodo.org/badge/53253009.svg
    :target: https://doi.org/10.5281/zenodo.15528895
 
-A comprehensive collection of C, C++, and systems programming notes with working
-code examples. Covers modern C11/C17/C23 features, modern C++11/14/17/20/23,
-POSIX system calls, debugging tools, and x86 assembly. All examples are tested
-and buildable.
+This cheatsheet provides a curated collection of C and C++ code snippets covering modern language standards, system programming, and development tools. From basic syntax to advanced features like coroutines, templates, and memory management, each example is designed to be clear, practical, and ready to use. All code is tested and compiles cleanly, so you can focus on learning and adapting rather than debugging reference material.
 
 Modern C Programming
 ====================
