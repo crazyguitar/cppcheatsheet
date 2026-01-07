@@ -20,6 +20,7 @@ fundamentals for low-level optimization and hardware interaction.
    :maxdepth: 1
 
    c_basic
+   c_memory
    c_macro
-   c_make
+   make
    asm

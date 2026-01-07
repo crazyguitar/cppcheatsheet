@@ -1,5 +1,5 @@
 ==========
-C Makefile
+Makefile
 ==========
 
 .. meta::
