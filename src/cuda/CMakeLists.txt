@@ -75,4 +75,8 @@ if(ENABLE_CUDA)
   add_executable(cuda-memory-visibility-patterns memory-visibility-patterns/main.cu)
   target_link_libraries(cuda-memory-visibility-patterns GTest::gtest_main)
   gtest_discover_tests(cuda-memory-visibility-patterns)
+
+  add_executable(cuda-memory-visibility-barrier memory-visibility-barrier/main.cu)
+  target_link_libraries(cuda-memory-visibility-barrier GTest::gtest_main)
+  gtest_discover_tests(cuda-memory-visibility-barrier)
 endif()

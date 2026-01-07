@@ -17,9 +17,10 @@
 //   memory_order_acq_rel  - Both acquire and release
 //   memory_order_seq_cst  - Total ordering (default)
 
-#include <cuda/atomic>
 #include <cuda_runtime.h>
 #include <gtest/gtest.h>
+
+#include <cuda/atomic>
 
 // Thread Scopes
 
@@ -34,9 +35,7 @@ __global__ void scope_block_test(int* result) {
   if (threadIdx.x == 0) *result = counter.load();
 }
 
-__global__ void scope_device_test(cuda::atomic<int, cuda::thread_scope_device>* counter) {
-  counter->fetch_add(1, cuda::std::memory_order_relaxed);
-}
+__global__ void scope_device_test(cuda::atomic<int, cuda::thread_scope_device>* counter) { counter->fetch_add(1, cuda::std::memory_order_relaxed); }
 
 // Memory Orders
 
@@ -45,8 +44,7 @@ __global__ void producer(int* data, cuda::atomic<int, cuda::thread_scope_device>
   flag->store(1, cuda::std::memory_order_release);  // Prior writes visible
 }
 
-__global__ void consumer(int* data, cuda::atomic<int, cuda::thread_scope_device>* flag,
-                         int* result) {
+__global__ void consumer(int* data, cuda::atomic<int, cuda::thread_scope_device>* flag, int* result) {
   while (flag->load(cuda::std::memory_order_acquire) == 0);  // Sees prior writes
   *result = *data;
 }

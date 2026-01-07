@@ -166,6 +166,79 @@ Fences provide explicit ordering without atomicity.
     __threadfence();
     *flag = 1;  // Other SM sees data=42 when flag=1
 
+Asynchronous Barriers (cuda::barrier)
+-------------------------------------
+
+``cuda::barrier`` extends synchronization beyond ``__syncthreads()`` by enabling
+split arrive/wait operations. This allows threads to signal arrival, do other
+work, then wait—overlapping computation with synchronization. Unlike
+``__syncthreads()`` which blocks immediately, barriers let you decouple the
+"I'm done" signal from the "wait for others" operation.
+
+:Source: `src/cuda/memory-visibility-barrier <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/memory-visibility-barrier>`_
+
+Reference: `CUDA Asynchronous Barriers <https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/async-barriers.html>`_
+
+**Basic Usage:**
+
+A barrier tracks arrivals using tokens. When a thread calls ``arrive()``, it gets
+a token representing the current phase. The thread later calls ``wait(token)`` to
+block until all expected arrivals for that phase complete. This split allows
+independent work between arrive and wait.
+
+.. code-block:: text
+
+    Thread 0                 Thread 1                 Thread 2
+       |                        |                        |
+    arrive() ──────────────►  arrive() ─────────────►  arrive()
+       │ token0                 │ token1                 │ token2
+       │                        │                        │
+    [independent work]   [independent work]   [independent work]
+       │                        │                        │
+    wait(token0)            wait(token1)            wait(token2)
+       │                        │                        │
+       ├────────────────────────┼────────────────────────┤
+       │        (all arrived, barrier done)              │
+       ▼                        ▼                        ▼
+    continue                 continue                 continue
+
+    - arrive() = "I'm done, here's my token" (non-blocking)
+    - wait(token) = "Block until ALL threads have arrived"
+    - Token tracks which barrier phase (not which thread)
+
+.. code-block:: cuda
+
+    #include <cuda/barrier>
+    #include <cooperative_groups.h>
+
+    __global__ void barrier_example() {
+      __shared__ cuda::barrier<cuda::thread_scope_block> bar;
+      __shared__ int smem[256];
+      auto block = cooperative_groups::this_thread_block();
+
+      if (block.thread_rank() == 0) init(&bar, block.size());
+      block.sync();
+
+      smem[threadIdx.x] = compute();   // Write to shared memory
+      auto token = bar.arrive();       // Signal "I'm done writing"
+      int local = expensive_compute(); // Do independent work while others arrive
+      bar.wait(std::move(token));      // Now wait for all arrivals
+      use(smem[...], local);           // Safe to read shared memory
+    }
+
+**arrive_and_wait vs Split Arrive/Wait:**
+
++---------------------------+------------------------------------------------+
+| Pattern                   | Use Case                                       |
++===========================+================================================+
+| ``bar.arrive_and_wait()`` | Simple sync, like __syncthreads()              |
++---------------------------+------------------------------------------------+
+| ``bar.arrive()`` + work   | Overlap computation while waiting              |
+| + ``bar.wait(token)``     |                                                |
++---------------------------+------------------------------------------------+
+| ``bar.arrive_and_drop()`` | Thread exits early, reduces expected count     |
++---------------------------+------------------------------------------------+
+
 cuda::std::atomic (libcu++)
 ---------------------------
 
