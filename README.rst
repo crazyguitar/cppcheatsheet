@@ -51,6 +51,7 @@ CUDA Programming
 - `Cooperative Groups <docs/notes/cuda/coop_groups.rst>`_
 - `Memory Visibility <docs/notes/cuda/memory_visibility.rst>`_
 - `Pipelines <docs/notes/cuda/pipelines.rst>`_
+- `IPC & P2P <docs/notes/cuda/ipc.rst>`_
 
 Bash & System Tools
 ===================
