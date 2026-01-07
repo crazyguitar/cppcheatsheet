@@ -9,75 +9,6 @@ Cooperative Groups
 .. contents:: Table of Contents
     :backlinks: none
 
-Quick Reference
----------------
-
-:Source: `src/cuda/coop-groups-cheatsheet <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/coop-groups-cheatsheet>`_
-
-.. code-block:: cuda
-
-    #include <cooperative_groups.h>
-    #include <cooperative_groups/reduce.h>
-    namespace cg = cooperative_groups;
-
-    __global__ void kernel() {
-      // Create groups
-      cg::thread_block block = cg::this_thread_block();           // All threads in block
-      cg::thread_block_tile<32> warp = cg::tiled_partition<32>(block);  // 32-thread warp
-      cg::thread_block_tile<4> tile = cg::tiled_partition<4>(warp);     // 4-thread tile
-      cg::coalesced_group active = cg::coalesced_threads();       // Currently active threads
-
-      // Group properties
-      block.size();          // Number of threads in group
-      block.thread_rank();   // Thread index within group (0 to size-1)
-      warp.meta_group_rank();    // Which warp in block (0, 1, 2, ...)
-      warp.meta_group_size();    // Number of warps in block
-
-      // Synchronization
-      block.sync();          // __syncthreads() equivalent
-      warp.sync();           // __syncwarp() equivalent
-      tile.sync();           // Sync 4 threads
-
-      // Collective reductions (all threads get result)
-      float sum = cg::reduce(warp, val, cg::plus<float>());    // Sum
-      float max = cg::reduce(warp, val, cg::greater<float>()); // Max
-      float min = cg::reduce(warp, val, cg::less<float>());    // Min
-      int all_and = cg::reduce(warp, bits, cg::bit_and<int>()); // Bitwise AND
-      int all_or = cg::reduce(warp, bits, cg::bit_or<int>());   // Bitwise OR
-      int all_xor = cg::reduce(warp, bits, cg::bit_xor<int>()); // Bitwise XOR
-
-      // Inclusive/Exclusive scan (prefix sum)
-      float incl = cg::inclusive_scan(warp, val, cg::plus<float>()); // [a, a+b, a+b+c, ...]
-      float excl = cg::exclusive_scan(warp, val, cg::plus<float>()); // [0, a, a+b, ...]
-
-      // Shuffle operations (data exchange within group)
-      float broadcasted = warp.shfl(val, 0);           // Broadcast from thread 0
-      float from_src = warp.shfl(val, src_lane);       // Get value from src_lane
-      float shifted = warp.shfl_down(val, 1);          // Shift values down by 1
-      float shifted_up = warp.shfl_up(val, 1);         // Shift values up by 1
-      float swapped = warp.shfl_xor(val, 1);           // XOR swap with neighbor
-
-      // Predicates (vote operations)
-      bool any_true = warp.any(predicate);       // True if any thread has predicate
-      bool all_true = warp.all(predicate);       // True if all threads have predicate
-      unsigned ballot = warp.ballot(predicate);  // Bitmask of predicate results
-
-      // Labeled partition (group threads by label value)
-      cg::coalesced_group same_label = cg::labeled_partition(warp, label);
-
-      // Thread indexing helpers
-      int global_idx = block.group_index().x * block.group_dim().x + block.thread_index().x;
-      dim3 block_idx = block.group_index();   // blockIdx equivalent
-      dim3 block_dim = block.group_dim();     // blockDim equivalent
-      dim3 thread_idx = block.thread_index(); // threadIdx equivalent
-
-      // Elect single thread (useful for single-thread work)
-      if (warp.thread_rank() == 0) { /* only one thread executes */ }
-
-      // Match threads with same value
-      unsigned match_mask = __match_any_sync(0xffffffff, value);  // Threads with same value
-    }
-
 Introduction
 ------------
 
@@ -91,6 +22,120 @@ The key insight is that threads form hierarchical groups, and you can synchroniz
 or perform collective operations on any group. This makes code more composable
 and easier to reason about, especially for complex algorithms that need different
 synchronization scopes.
+
+Quick Reference
+---------------
+
+:Source: `src/cuda/coop-groups-cheatsheet <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/coop-groups-cheatsheet>`_
+
+Creating Groups
+~~~~~~~~~~~~~~~
+
+Create thread groups at different granularities for synchronization and collective ops.
+
+.. code-block:: cuda
+
+    #include <cooperative_groups.h>
+    #include <cooperative_groups/reduce.h>
+    namespace cg = cooperative_groups;
+
+    cg::thread_block block = cg::this_thread_block();           // All threads in block
+    cg::thread_block_tile<32> warp = cg::tiled_partition<32>(block);  // 32-thread warp
+    cg::thread_block_tile<4> tile = cg::tiled_partition<4>(warp);     // 4-thread tile
+    cg::coalesced_group active = cg::coalesced_threads();       // Currently active threads
+
+Group Properties
+~~~~~~~~~~~~~~~~
+
+Query group size and thread position within the group.
+
+.. code-block:: cuda
+
+    block.size();              // Number of threads in group
+    block.thread_rank();       // Thread index within group (0 to size-1)
+    warp.meta_group_rank();    // Which warp in block (0, 1, 2, ...)
+    warp.meta_group_size();    // Number of warps in block
+
+Synchronization
+~~~~~~~~~~~~~~~
+
+Barrier synchronization - all threads must reach before any proceed.
+
+.. code-block:: cuda
+
+    block.sync();          // __syncthreads() equivalent
+    warp.sync();           // __syncwarp() equivalent
+    tile.sync();           // Sync 4 threads
+
+Collective Reductions
+~~~~~~~~~~~~~~~~~~~~~
+
+Combine values across all threads in a group. All threads receive the result.
+
+.. code-block:: cuda
+
+    float sum = cg::reduce(warp, val, cg::plus<float>());    // Sum
+    float max = cg::reduce(warp, val, cg::greater<float>()); // Max
+    float min = cg::reduce(warp, val, cg::less<float>());    // Min
+    int all_and = cg::reduce(warp, bits, cg::bit_and<int>()); // Bitwise AND
+    int all_or = cg::reduce(warp, bits, cg::bit_or<int>());   // Bitwise OR
+    int all_xor = cg::reduce(warp, bits, cg::bit_xor<int>()); // Bitwise XOR
+
+Scan Operations
+~~~~~~~~~~~~~~~
+
+Prefix sum - each thread gets cumulative result of all preceding threads.
+
+.. code-block:: cuda
+
+    float incl = cg::inclusive_scan(warp, val, cg::plus<float>()); // [a, a+b, a+b+c, ...]
+    float excl = cg::exclusive_scan(warp, val, cg::plus<float>()); // [0, a, a+b, ...]
+
+Shuffle Operations
+~~~~~~~~~~~~~~~~~~
+
+Direct register-to-register data exchange between threads without shared memory.
+
+.. code-block:: cuda
+
+    float broadcasted = warp.shfl(val, 0);           // Broadcast from thread 0
+    float from_src = warp.shfl(val, src_lane);       // Get value from src_lane
+    float shifted = warp.shfl_down(val, 1);          // Shift values down by 1
+    float shifted_up = warp.shfl_up(val, 1);         // Shift values up by 1
+    float swapped = warp.shfl_xor(val, 1);           // XOR swap with neighbor
+
+Predicates (Vote Operations)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Evaluate conditions across threads and collect results.
+
+.. code-block:: cuda
+
+    bool any_true = warp.any(predicate);       // True if any thread has predicate
+    bool all_true = warp.all(predicate);       // True if all threads have predicate
+    unsigned ballot = warp.ballot(predicate);  // Bitmask of predicate results
+
+Partitioning
+~~~~~~~~~~~~
+
+Dynamically group threads based on runtime values.
+
+.. code-block:: cuda
+
+    cg::coalesced_group same_label = cg::labeled_partition(warp, label);
+    unsigned match_mask = __match_any_sync(0xffffffff, value);  // Threads with same value
+
+Thread Indexing
+~~~~~~~~~~~~~~~
+
+Map between cooperative groups API and traditional CUDA indexing.
+
+.. code-block:: cuda
+
+    int global_idx = block.group_index().x * block.group_dim().x + block.thread_index().x;
+    dim3 block_idx = block.group_index();   // blockIdx equivalent
+    dim3 block_dim = block.group_dim();     // blockDim equivalent
+    dim3 thread_idx = block.thread_index(); // threadIdx equivalent
 
 Legacy Synchronization
 ----------------------
@@ -159,27 +204,6 @@ Cooperative Groups provides a hierarchy of thread groups:
       int warp_rank = warp.thread_rank();    // 0 to 31
       int tile_rank = tile4.thread_rank();   // 0 to 3
     }
-
-Group Properties and Methods
-----------------------------
-
-Each group object provides useful properties and methods:
-
-.. code-block:: cuda
-
-    cg::thread_block block = cg::this_thread_block();
-
-    block.size();         // Number of threads in group
-    block.thread_rank();  // This thread's index within group (0 to size-1)
-    block.sync();         // Synchronize all threads in group
-
-    // For tiled partitions
-    cg::thread_block_tile<32> warp = cg::tiled_partition<32>(block);
-
-    warp.size();          // Always 32 for this tile
-    warp.thread_rank();   // 0 to 31
-    warp.meta_group_size();   // Number of tiles in parent
-    warp.meta_group_rank();   // This tile's index in parent
 
 Collective Operations
 ---------------------
