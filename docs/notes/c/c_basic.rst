@@ -1,6 +1,6 @@
-===================
-C Basics Reference
-===================
+========
+C Basics
+========
 
 .. meta::
    :description: Modern C programming fundamentals covering C11, C17, and C23 features including _Generic, _Static_assert, atomics, threads, anonymous structs, and classic C patterns.

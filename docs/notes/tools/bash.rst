@@ -1,6 +1,6 @@
-======================
-Bash Basic Cheatsheet
-======================
+====
+Bash
+====
 
 .. meta::
    :description: Comprehensive Bash scripting reference covering variables, arrays, string manipulation, conditionals, loops, functions, regex, text processing, and error handling for Linux/Unix shell programming.

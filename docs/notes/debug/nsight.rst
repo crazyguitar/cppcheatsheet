@@ -1,6 +1,6 @@
-========================
-Nsight Systems Reference
-========================
+==============
+Nsight Systems
+==============
 
 .. meta::
    :description: NVIDIA Nsight Systems tutorial for GPU profiling, CPU-GPU timeline visualization, CUDA kernel analysis, memory transfer optimization, and application performance analysis.

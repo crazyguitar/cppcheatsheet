@@ -1,6 +1,6 @@
-================
-GPU Cheatsheet
-================
+===
+GPU
+===
 
 .. meta::
    :description: GPU monitoring and management commands covering nvidia-smi, CUDA, multi-GPU systems, and graphics card diagnostics on Linux.

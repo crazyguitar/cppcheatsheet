@@ -1,6 +1,6 @@
-======================
-C Makefile cheatsheet
-======================
+==========
+C Makefile
+==========
 
 .. meta::
    :description: GNU Make reference for C projects covering automatic variables, string functions, pattern rules, shared libraries, and recursive builds.

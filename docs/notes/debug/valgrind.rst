@@ -1,6 +1,6 @@
-==================
-Valgrind Reference
-==================
+========
+Valgrind
+========
 
 .. meta::
    :description: Valgrind tutorial for memory leak detection, heap profiling with Massif, cache profiling with Cachegrind, and call graph analysis with Callgrind in C/C++ programs.

@@ -1,6 +1,6 @@
-================
-Signal Reference
-================
+======
+Signal
+======
 
 .. meta::
    :description: C signal handling tutorial with examples for signal handlers, sigaction, pthread signals, blocking/unblocking signals, and child process monitoring on Unix/Linux systems.

@@ -1,6 +1,6 @@
-==============
-Perf Reference
-==============
+====
+Perf
+====
 
 .. meta::
    :description: Linux perf tutorial for CPU profiling, performance analysis, flame graphs, cache analysis, and system-wide tracing of C/C++ applications.

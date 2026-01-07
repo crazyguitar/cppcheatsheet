@@ -1,6 +1,6 @@
-=======================
-X86 Assembly Reference
-=======================
+============
+X86 Assembly
+============
 
 .. meta::
    :description: X86 and ARM64 assembly reference covering syscalls, inline assembly, CPUID, calling conventions, and common patterns for systems programming.

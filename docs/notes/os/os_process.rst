@@ -1,6 +1,6 @@
-=================
-Process Reference
-=================
+=======
+Process
+=======
 
 .. meta::
    :description: Unix process management tutorial in C with examples for fork, exec, wait, waitpid, process IDs, environment variables, and system information on Linux and macOS.

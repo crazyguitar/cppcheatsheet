@@ -1,6 +1,6 @@
-====================
-Network Cheatsheet
-====================
+=======
+Network
+=======
 
 .. meta::
    :description: Linux network commands covering configuration, diagnostics, port scanning, packet capture, DNS lookup, data transfer, and firewall management.

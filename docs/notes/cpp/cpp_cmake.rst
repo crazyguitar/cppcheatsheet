@@ -1,6 +1,6 @@
-=================
-CMake Cheatsheet
-=================
+=====
+CMake
+=====
 
 .. meta::
    :description: Modern CMake tutorial covering project setup, targets, dependencies, FetchContent, find_package, installation, and cross-platform C++ build configuration.

@@ -1,6 +1,6 @@
-===================
-Hardware Cheatsheet
-===================
+========
+Hardware
+========
 
 .. meta::
    :description: Linux hardware information and management commands covering CPU, memory, disk, and PCI device diagnostics.

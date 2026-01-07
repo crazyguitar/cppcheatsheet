@@ -1,6 +1,6 @@
-=================
-Tracing Reference
-=================
+=======
+Tracing
+=======
 
 .. meta::
    :description: Linux tracing tutorial with strace for system call tracing, ltrace for library call tracing, and ftrace for kernel function tracing in C/C++ debugging and analysis.

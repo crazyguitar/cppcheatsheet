@@ -1,6 +1,6 @@
-==============
-File Reference
-==============
+====
+File
+====
 
 .. meta::
    :description: C file I/O tutorial with examples for reading, writing, copying files, popen, FIFOs, lseek, fstat, file types, and directory traversal on Unix/Linux systems.

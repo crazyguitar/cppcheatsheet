@@ -1,6 +1,6 @@
-================
-Socket Reference
-================
+======
+Socket
+======
 
 .. meta::
    :description: C socket programming tutorial with examples for TCP/UDP servers, DNS resolution with gethostbyname and getaddrinfo, byte order conversion, I/O multiplexing using select, poll, epoll, kqueue, and Unix domain sockets.

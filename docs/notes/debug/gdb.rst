@@ -1,6 +1,6 @@
-===================
-GDB Debug Reference
-===================
+===
+GDB
+===
 
 .. meta::
    :description: GDB debugger tutorial with commands for breakpoints, stepping, stack traces, memory inspection, watchpoints, reverse debugging, and CUDA GPU debugging with cuda-gdb.

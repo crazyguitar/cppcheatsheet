@@ -1,6 +1,6 @@
-===========================
-Operating System Cheatsheet
-===========================
+================
+Operating System
+================
 
 .. meta::
    :description: Linux/Unix command-line reference covering date manipulation, file searching with find, system information, process management, and file operations.

@@ -1,6 +1,6 @@
-===============================
-Return Value Optimization (RVO)
-===============================
+===========================
+Return Value Optimization
+===========================
 
 .. meta::
    :description: C++ RVO and NRVO explained with examples showing copy elision, move semantics, and compiler optimizations.

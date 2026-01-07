@@ -1,6 +1,6 @@
-================
-Thread Reference
-================
+======
+Thread
+======
 
 .. meta::
    :description: POSIX threads (pthreads) tutorial in C with examples for thread creation, mutex locks, condition variables, read-write locks, thread-local storage, and Unix daemon programming.

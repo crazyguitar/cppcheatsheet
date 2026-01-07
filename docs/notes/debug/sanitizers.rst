@@ -1,6 +1,6 @@
-====================
-Sanitizers Reference
-====================
+==========
+Sanitizers
+==========
 
 .. meta::
    :description: Compiler sanitizers tutorial for AddressSanitizer (ASan), ThreadSanitizer (TSan), UndefinedBehaviorSanitizer (UBSan), MemorySanitizer (MSan), and LeakSanitizer for C/C++ debugging.
