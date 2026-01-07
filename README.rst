@@ -11,6 +11,7 @@ Modern C Programming
 ====================
 
 - `C Basics <docs/notes/c/c_basic.rst>`_
+- `Memory <docs/notes/c/c_memory.rst>`_
 - `Preprocessor & GNU Extensions <docs/notes/c/c_macro.rst>`_
 - `Makefile <docs/notes/c/make.rst>`_
 - `X86 Assembly <docs/notes/c/asm.rst>`_
