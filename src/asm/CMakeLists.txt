@@ -1,0 +1,12 @@
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    enable_language(ASM)
+    add_subdirectory(exit)
+    add_subdirectory(hello)
+    add_subdirectory(loop)
+    add_subdirectory(procedure)
+    add_subdirectory(args)
+endif()
+
+add_subdirectory(inline-asm)
+add_subdirectory(cpuid)
+add_subdirectory(syscall-wrapper)

@@ -1,0 +1,3 @@
+add_executable(split_string_test main.cc)
+target_link_libraries(split_string_test GTest::gtest_main)
+gtest_discover_tests(split_string_test)

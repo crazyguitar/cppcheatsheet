@@ -1,0 +1,3 @@
+add_executable(static_assert_test main.cc)
+target_link_libraries(static_assert_test GTest::gtest_main)
+gtest_discover_tests(static_assert_test)

@@ -1,0 +1,3 @@
+add_executable(endian_check_test main.cc)
+target_link_libraries(endian_check_test GTest::gtest_main)
+gtest_discover_tests(endian_check_test)

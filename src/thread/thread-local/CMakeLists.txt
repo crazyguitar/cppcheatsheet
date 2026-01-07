@@ -1,0 +1,3 @@
+add_executable(thread_local_test main.cc)
+target_link_libraries(thread_local_test GTest::gtest_main pthread)
+gtest_discover_tests(thread_local_test)

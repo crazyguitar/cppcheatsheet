@@ -1,0 +1,7 @@
+add_subdirectory(c-linkage)
+add_subdirectory(uniform-initialization)
+add_subdirectory(negative-array-index)
+add_subdirectory(reference-collapsing)
+add_subdirectory(perfect-forwarding)
+add_subdirectory(bit-manipulation)
+add_subdirectory(addressof)

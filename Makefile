@@ -1,19 +1,26 @@
 REQUIREMENT = requirements.txt
 
-VER  = $(word 2, $(shell python --version 2>&1))
+VER  = $(word 2, $(shell python3 --version 2>&1))
 SRC  = app.py app_test.py
 PY36 = $(shell expr $(VER) \>= 3.6)
 
-.PHONY: build deps test
-build: html
+.PHONY: all docs deps pytest build test format clean
 
-%:
-	cd docs && make $@
+all: build test
 
-test: clean build
+docs:
+	cd docs && make html
+
+build:
+	./build.sh
+
+test: build
+	cd build && ctest --output-on-failure
+
+pytest: clean docs
 	pycodestyle $(SRC)
 	pydocstyle $(SRC)
-	bandit $(SRC)
+	bandit app.py
 	coverage run app_test.py && coverage report --fail-under=100 -m $(SRC)
 ifeq ($(PY36), 1)
 	black --quiet --diff --check --line-length 79 $(SRC)
@@ -24,3 +31,14 @@ deps:
 ifeq ($(PY36), 1)
 	pip install black==22.3.0
 endif
+
+format:
+	find . -type f -name "*.cc" -o -name "*.h" -o -name "*.cu" -o -name "*.cuh" | xargs -I{} clang-format -style=file -i {}
+
+clean:
+	rm -rf build
+	cd docs && make clean
+
+.PHONY: sqush
+sqush: clean
+	./enroot.sh -n cuda -f ${PWD}/Dockerfile

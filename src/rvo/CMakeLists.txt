@@ -1,0 +1,7 @@
+add_subdirectory(instrumented)
+add_subdirectory(rvo)
+add_subdirectory(nrvo)
+add_subdirectory(copy-elision)
+add_subdirectory(no-rvo)
+add_subdirectory(no-move-return)
+add_subdirectory(conditional)

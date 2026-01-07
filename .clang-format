@@ -1,0 +1,5 @@
+BasedOnStyle: Google
+AlignAfterOpenBracket: BlockIndent
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackParameters: false
+ColumnLimit: 150

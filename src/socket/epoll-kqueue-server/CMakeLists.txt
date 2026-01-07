@@ -1,0 +1,3 @@
+add_executable(epoll_kqueue_server_test main.cc)
+target_link_libraries(epoll_kqueue_server_test GTest::gtest_main)
+gtest_discover_tests(epoll_kqueue_server_test)

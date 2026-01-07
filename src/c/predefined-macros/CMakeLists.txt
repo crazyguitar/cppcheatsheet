@@ -1,0 +1,3 @@
+add_executable(predefined_macros_test main.cc)
+target_link_libraries(predefined_macros_test GTest::gtest_main)
+gtest_discover_tests(predefined_macros_test)

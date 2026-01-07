@@ -1,13 +1,36 @@
 {% extends "!layout.html" %}
 {%- block extrahead %}
+<meta name="color-scheme" content="light">
+<script>
+(function() {
+  document.documentElement.setAttribute('data-theme', 'light');
+  localStorage.setItem('theme', 'light');
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.documentElement.setAttribute('data-theme', 'light');
+    const observer = new MutationObserver(function() {
+      if (document.documentElement.getAttribute('data-theme') !== 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  });
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="{% if pagename == 'index' %}Comprehensive C/C++ cheat sheet with practical code snippets for developers. Learn C/C++ basics, advanced topics, memory management, and more.{% else %}{{ title }} - C/C++ code examples and snippets from the comprehensive C/C++ cheat sheet.{% endif %}">
+<meta name="keywords" content="C++, C, C++ cheat sheet, C cheat sheet, C++ tutorial, C tutorial, C++ examples, C examples, C++ code snippets, C code snippets, programming, development">
+<meta name="author" content="crazyguitar">
+<meta name="robots" content="index, follow">
 {%- if pagename == 'index' %}
 <link rel="canonical" href="https://cppcheatsheet.com/"/>
 <meta property="og:url" content="https://cppcheatsheet.com/">
+<meta property="og:description" content="Comprehensive C/C++ cheat sheet with practical code snippets for developers. Learn C/C++ basics, advanced topics, memory management, and more.">
 {%- elif pagename == '404' -%}
 {%- else %}
 <link rel="canonical" href="https://cppcheatsheet.com/{{ pagename }}{{ file_suffix }}"/>
 <meta property="og:url" content="https://cppcheatsheet.com/{{ pagename }}{{ file_suffix }}">
+<meta property="og:description" content="{{ title }} - C/C++ code examples and snippets from the comprehensive C/C++ cheat sheet.">
 {%- endif %}
 <!-- Google Scholar metadata -->
 <meta name="citation_title" content="C/C++ Cheatsheet">
@@ -20,6 +43,10 @@
 
 <meta property="og:type" content="article">
 <meta property="og:title" content="{{ title }}{{ titlesuffix }}">
+<meta property="og:site_name" content="C/C++ Cheat Sheet">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="{{ title }}{{ titlesuffix }}">
+<meta name="twitter:description" content="{% if pagename == 'index' %}Comprehensive C/C++ cheat sheet with practical code snippets for developers{% else %}{{ title }} - C/C++ code examples and snippets{% endif %}">
 {%- if tracking_id %}
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ tracking_id }}"></script>

@@ -8,3 +8,71 @@ div.highlight > pre {
     background: #f6f8fa !important;
     border: 1px solid #000000 !important;
 }
+
+:root {
+    --cu-boulder-gold: #CFB87C;
+}
+
+.bd-container {
+    max-width: 99%;
+}
+
+.bd-container .bd-container__inner {
+    max-width: 99%;
+}
+
+.bd-main .bd-content .bd-article-container {
+    max-width: 100em;
+}
+
+.code-block-caption {
+    color: black;
+}
+
+.bd-sidebar-primary li.has-children>details>summary .toctree-toggle {
+    justify-content: left;
+}
+
+html[data-theme=light] {
+    --pst-font-size-base: none;
+    --pst-color-secondary: #176de8;
+    --pst-color-primary: #176de8;
+}
+
+.graph#doc-flowchart .node text {
+    font-weight: bold;
+}
+
+.bd-content .sd-tab-set .sd-tab-content {
+    padding: 1.5rem;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+button.theme-switch-button {
+    display: none !important;
+}
+
+blockquote {
+  background-color: transparent;
+  border: none;
+}
+
+/* Remove table hover effects */
+table.table tbody tr:hover,
+table.table tbody tr.row-odd:hover,
+table.table tbody tr.row-even:hover {
+  background-color: transparent !important;
+}
+
+table.table tbody tr:hover td,
+table.table tbody tr.row-odd:hover td,
+table.table tbody tr.row-even:hover td {
+  background-color: transparent !important;
+}

@@ -1,0 +1,3 @@
+add_executable(overflow_check_test main.cc)
+target_link_libraries(overflow_check_test GTest::gtest_main)
+gtest_discover_tests(overflow_check_test)

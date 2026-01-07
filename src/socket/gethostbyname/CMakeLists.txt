@@ -1,0 +1,3 @@
+add_executable(gethostbyname_test main.cc)
+target_link_libraries(gethostbyname_test GTest::gtest_main)
+gtest_discover_tests(gethostbyname_test)

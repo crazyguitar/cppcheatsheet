@@ -1,0 +1,3 @@
+add_executable(comma_operator_test main.cc)
+target_link_libraries(comma_operator_test GTest::gtest_main)
+gtest_discover_tests(comma_operator_test)

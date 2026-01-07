@@ -1,0 +1,3 @@
+add_executable(sigaction_handler_test main.cc)
+target_link_libraries(sigaction_handler_test GTest::gtest_main)
+gtest_discover_tests(sigaction_handler_test)
