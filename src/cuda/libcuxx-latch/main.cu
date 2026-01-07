@@ -2,19 +2,20 @@
 // See: docs/notes/cuda/cuda_cpp.rst
 
 #include <cooperative_groups.h>
-#include <cuda/latch>
 #include <gtest/gtest.h>
+
 #include <cstdio>
+#include <cuda/latch>
 
 namespace cg = cooperative_groups;
 
-#define CUDA_CHECK(exp)                                                                                              \
-  do {                                                                                                               \
-    cudaError_t err = (exp);                                                                                         \
-    if (err != cudaSuccess) {                                                                                        \
-      fprintf(stderr, "[%s:%d] %s failed: %s\n", __FILE__, __LINE__, #exp, cudaGetErrorString(err));                 \
-      exit(1);                                                                                                       \
-    }                                                                                                                \
+#define CUDA_CHECK(exp)                                                                              \
+  do {                                                                                               \
+    cudaError_t err = (exp);                                                                         \
+    if (err != cudaSuccess) {                                                                        \
+      fprintf(stderr, "[%s:%d] %s failed: %s\n", __FILE__, __LINE__, #exp, cudaGetErrorString(err)); \
+      exit(1);                                                                                       \
+    }                                                                                                \
   } while (0)
 
 __global__ void latch_kernel(int* output, int threads_per_block) {
