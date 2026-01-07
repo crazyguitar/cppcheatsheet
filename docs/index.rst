@@ -17,5 +17,6 @@ Whether you're refreshing your memory on pointer arithmetic, exploring modern C+
    notes/c/index
    notes/cpp/index
    notes/os/index
+   notes/cuda/index
    notes/tools/index
    notes/debug/index

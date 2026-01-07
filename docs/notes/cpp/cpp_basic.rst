@@ -1,5 +1,5 @@
 ============
-Fundamentals
+C++ Basics
 ============
 
 .. meta::

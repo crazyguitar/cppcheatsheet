@@ -14,7 +14,13 @@ docs:
 build:
 	./build.sh
 
+cuda:
+	./build.sh --cuda
+
 test: build
+	cd build && ctest --output-on-failure
+
+test-cuda: cuda
 	cd build && ctest --output-on-failure
 
 pytest: clean docs

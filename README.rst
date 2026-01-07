@@ -18,7 +18,7 @@ Modern C Programming
 Modern C++ Programming
 ======================
 
-- `Fundamentals <docs/notes/cpp/cpp_basic.rst>`_
+- `C++ Basics <docs/notes/cpp/cpp_basic.rst>`_
 - `Resource Management <docs/notes/cpp/cpp_raii.rst>`_
 - `String <docs/notes/cpp/cpp_string.rst>`_
 - `Container <docs/notes/cpp/cpp_container.rst>`_
@@ -42,6 +42,11 @@ System Programming
 - `Signal <docs/notes/os/os_signal.rst>`_
 - `Socket <docs/notes/os/os_socket.rst>`_
 - `Thread <docs/notes/os/os_thread.rst>`_
+
+CUDA Programming
+================
+
+- `CUDA Basics <docs/notes/cuda/cuda_basics.rst>`_
 
 Bash & System Tools
 ===================
