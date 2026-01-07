@@ -50,6 +50,7 @@ CUDA Programming
 - `CUDA Basics <docs/notes/cuda/cuda_basics.rst>`_
 - `Cooperative Groups <docs/notes/cuda/coop_groups.rst>`_
 - `Memory Visibility <docs/notes/cuda/memory_visibility.rst>`_
+- `Pipelines <docs/notes/cuda/pipelines.rst>`_
 
 Bash & System Tools
 ===================

@@ -79,4 +79,8 @@ if(ENABLE_CUDA)
   add_executable(cuda-memory-visibility-barrier memory-visibility-barrier/main.cu)
   target_link_libraries(cuda-memory-visibility-barrier GTest::gtest_main)
   gtest_discover_tests(cuda-memory-visibility-barrier)
+
+  add_executable(cuda-pipeline pipeline/main.cu)
+  target_link_libraries(cuda-pipeline GTest::gtest_main)
+  gtest_discover_tests(cuda-pipeline)
 endif()

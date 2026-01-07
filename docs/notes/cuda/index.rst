@@ -28,3 +28,4 @@ optimizing memory access patterns.
    cuda_basics
    coop_groups
    memory_visibility
+   pipelines
