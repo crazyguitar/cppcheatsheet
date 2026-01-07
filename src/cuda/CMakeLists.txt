@@ -83,4 +83,16 @@ if(ENABLE_CUDA)
   add_executable(cuda-pipeline pipeline/main.cu)
   target_link_libraries(cuda-pipeline GTest::gtest_main)
   gtest_discover_tests(cuda-pipeline)
+
+  add_executable(cuda-p2p-nvlink p2p-nvlink/main.cu)
+  target_link_libraries(cuda-p2p-nvlink GTest::gtest_main)
+  gtest_discover_tests(cuda-p2p-nvlink)
+
+  add_executable(cuda-p2p-ipc p2p-ipc/main.cu)
+  target_link_libraries(cuda-p2p-ipc GTest::gtest_main)
+  gtest_discover_tests(cuda-p2p-ipc)
+
+  add_executable(cuda-vmm vmm/main.cu)
+  target_link_libraries(cuda-vmm GTest::gtest_main cuda)
+  gtest_discover_tests(cuda-vmm)
 endif()

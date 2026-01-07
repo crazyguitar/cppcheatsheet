@@ -29,3 +29,4 @@ optimizing memory access patterns.
    coop_groups
    memory_visibility
    pipelines
+   ipc
