@@ -7,7 +7,7 @@ Documentation Status
 .. image:: https://zenodo.org/badge/53253009.svg
   :target: https://doi.org/10.5281/zenodo.15528895
 
-C Cheat Sheet
+C Programming
 =============
 
 - `From Scratch <docs/notes/c/c_basic.rst>`_
@@ -16,7 +16,7 @@ C Cheat Sheet
 - `Makefile <docs/notes/c/c_make.rst>`_
 - `X86 Assembly <docs/notes/c/asm_basic.rst>`_
 
-Modern C++ Cheat Sheet
+Modern C++ Programming
 ======================
 
 - `Modern C++ From Scratch <docs/notes/cpp/cpp_basic.rst>`_
@@ -35,26 +35,31 @@ Modern C++ Cheat Sheet
 - `Coroutine <docs/notes/cpp/cpp_coroutine.rst>`_
 - `CMake <docs/notes/cpp/cpp_cmake.rst>`_
 
-System Programming Cheat Sheet
-==============================
+System Programming
+==================
 
+- `Process <docs/notes/os/os_process.rst>`_
 - `File I/O <docs/notes/os/os_file.rst>`_
 - `Signal <docs/notes/os/os_signal.rst>`_
 - `Socket <docs/notes/os/os_socket.rst>`_
-- `Concurrency <docs/notes/os/os_concurrency.rst>`_
+- `Thread <docs/notes/os/os_thread.rst>`_
 
-Shell
-=====
+Bash & System Tools
+===================
 
-- `Bash From Scratch <docs/notes/tools/bash.rst>`_
+- `Bash <docs/notes/tools/bash.rst>`_
 - `Operating System <docs/notes/tools/os.rst>`_
 - `Network <docs/notes/tools/net.rst>`_
 - `Hardware <docs/notes/tools/hardware.rst>`_
 - `GPU <docs/notes/tools/gpu.rst>`_
 - `Systemd <docs/notes/tools/systemd.rst>`_
 
-GNU Debugger
-============
+Debugging & Profiling
+=====================
 
-- `GDB <docs/notes/debug/gdb_debug.rst>`_
+- `GDB <docs/notes/debug/gdb.rst>`_
+- `Valgrind <docs/notes/debug/valgrind.rst>`_
+- `Sanitizers <docs/notes/debug/sanitizers.rst>`_
+- `Tracing <docs/notes/debug/tracing.rst>`_
 - `Perf <docs/notes/debug/perf.rst>`_
+- `Nsight Systems <docs/notes/debug/nsight.rst>`_
