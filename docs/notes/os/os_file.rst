@@ -1,512 +1,362 @@
-============================
-C file operations cheatsheet
-============================
+==============
+File Reference
+==============
+
+.. meta::
+   :description: C file I/O tutorial with examples for reading, writing, copying files, popen, FIFOs, lseek, fstat, file types, and directory traversal on Unix/Linux systems.
+   :keywords: C file I/O, FIFO named pipe, popen, fopen fread fwrite, lseek example, fstat file size, copy file C, file types stat, nftw directory walk, Unix file operations, POSIX file API
 
 .. contents:: Table of Contents
     :backlinks: none
 
-Calculate file size via ``lseek``
----------------------------------
+Introduction
+------------
+
+File I/O is fundamental to Unix programming. The Unix philosophy of "everything
+is a file" means that the same system calls—``open()``, ``read()``, ``write()``,
+``close()``—work for regular files, devices, pipes, and sockets. This unified
+interface simplifies programming and enables powerful composition of tools.
+
+Unix provides two levels of file I/O: low-level system calls (``open``, ``read``,
+``write``) that work with file descriptors, and the standard C library's buffered
+I/O (``fopen``, ``fread``, ``fwrite``) that provides automatic buffering and
+portability. Low-level calls offer more control and are necessary for certain
+operations like file locking and memory mapping, while buffered I/O is more
+convenient for text processing and sequential access.
+
+File Size with ``lseek``
+------------------------
+
+:Source: `src/file/lseek-size <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/lseek-size>`_
+
+The ``lseek()`` system call repositions the file offset for an open file
+descriptor. By seeking to the end of the file (``SEEK_END``) and reading
+the resulting offset, you can determine the file size. This technique works
+for regular files but not for pipes, sockets, or some device files where
+seeking is not supported.
+
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <fcntl.h>
+    #include <unistd.h>
+
+    int main(int argc, char *argv[]) {
+      int fd = open(argv[1], O_RDONLY);
+      if (fd < 0) return 1;
+
+      off_t start = lseek(fd, 0, SEEK_SET);
+      off_t end = lseek(fd, 0, SEEK_END);
+      printf("File size: %lld bytes\n", (long long)(end - start));
+
+      close(fd);
+    }
+
+.. code-block:: console
+
+    $ echo "Hello" > hello.txt
+    $ ./lseek-size hello.txt
+    File size: 6 bytes
+
+File Size with ``fstat``
+------------------------
+
+:Source: `src/file/fstat-size <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/fstat-size>`_
+
+The ``fstat()`` system call retrieves metadata about an open file, including
+its size, permissions, ownership, and timestamps. Unlike ``lseek()``, ``fstat()``
+doesn't modify the file offset and provides additional information. The ``stat()``
+variant works with a pathname instead of a file descriptor.
+
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <fcntl.h>
+    #include <unistd.h>
+    #include <sys/stat.h>
+
+    int main(int argc, char *argv[]) {
+      int fd = open(argv[1], O_RDONLY);
+      if (fd < 0) return 1;
+
+      struct stat st;
+      fstat(fd, &st);
+      printf("File size: %lld bytes\n", (long long)st.st_size);
+
+      close(fd);
+    }
+
+.. code-block:: console
+
+    $ echo "Hello" > hello.txt
+    $ ./fstat-size hello.txt
+    File size: 6 bytes
+
+Copy File Contents
+------------------
+
+:Source: `src/file/copy-file <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/copy-file>`_
+
+Copying a file involves reading from the source and writing to the destination
+in a loop until all data is transferred. The buffer size affects performance:
+larger buffers reduce system call overhead but use more memory. This example
+also preserves the source file's permissions using ``fstat()`` to read them
+and passing them to ``open()`` when creating the destination.
+
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <fcntl.h>
+    #include <unistd.h>
+    #include <sys/stat.h>
+
+    #define BUF_SIZE 4096
+
+    int main(int argc, char *argv[]) {
+      int sfd = open(argv[1], O_RDONLY);
+      struct stat st;
+      fstat(sfd, &st);
+
+      int dfd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, st.st_mode);
+
+      char buf[BUF_SIZE];
+      ssize_t n;
+      while ((n = read(sfd, buf, BUF_SIZE)) > 0)
+        write(dfd, buf, n);
+
+      close(sfd);
+      close(dfd);
+    }
+
+.. code-block:: console
+
+    $ echo "Hello World" > source.txt
+    $ ./copy-file source.txt dest.txt
+    $ diff source.txt dest.txt
+
+Read Lines from File
+--------------------
+
+:Source: `src/file/read-lines <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/read-lines>`_
+
+The ``getline()`` function reads an entire line from a stream, dynamically
+allocating or reallocating the buffer as needed. It handles lines of any
+length and includes the newline character in the result. The caller must
+free the buffer when done. This is the preferred way to read lines in C
+as it avoids buffer overflow vulnerabilities present in ``gets()`` and
+the complexity of ``fgets()`` with unknown line lengths.
 
 .. code-block:: c
 
     #include <stdio.h>
     #include <stdlib.h>
-    #include <unistd.h>
-    #include <sys/types.h>
-    #include <sys/stat.h>
-    #include <fcntl.h>
 
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        int fd = -1;
-        size_t s_offset = 0;
-        size_t e_offset = -1;
-        char *path = NULL;
+    int main(int argc, char *argv[]) {
+      FILE *f = fopen(argv[1], "r");
+      if (!f) return 1;
 
-        if (argc != 2) {
-            printf("Usage: PROG file\n");
-            goto Error;
-        }
-        path = argv[1];
-        if(0 > (fd = open(path,O_RDONLY))) {
-            printf("open failed\n");
-            goto Error;
-        }
-        if (-1 == (s_offset = lseek(fd, 0, SEEK_SET))) {
-            printf("lseek error\n");
-            goto Error;
-        }
-        if (-1 == (e_offset = lseek(fd, 0, SEEK_END))) {
-            printf("lseek error\n");
-            goto Error;
-        }
-        printf("File Size: %ld byte\n", e_offset - s_offset);
-        ret = 0;
-    Error:
-        if (fd>=0) {
-            close(fd);
-        }
-        return ret;
+      char *line = NULL;
+      size_t len = 0;
+      while (getline(&line, &len, f) != -1)
+        printf("%s", line);
+
+      free(line);
+      fclose(f);
     }
 
-output:
+Read Entire File into Memory
+----------------------------
 
-.. code-block:: console
+:Source: `src/file/read-all <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/read-all>`_
 
-    $ echo "Hello" > hello.txt
-    $ ./a.out hello.txt
-    File Size: 6 byte
-
-
-Using ``fstat`` get file size
------------------------------
-
-.. code-block:: c
-
-    #include <stdio.h>
-    #include <sys/types.h>
-    #include <sys/stat.h>
-    #include <fcntl.h>
-    #include <unistd.h>
-
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        int fd = -1;
-        struct stat st = {0};
-        char *path = NULL;
-
-        if (argc != 2) {
-            printf("Usage: PROG file\n");
-            goto Error;
-        }
-        path = argv[1];
-        /* using fstat */
-        if (-1 == (fd = open(path, O_RDONLY))) {
-            printf("open file get error\n");
-            goto Error;
-        }
-        if (-1 == fstat(fd, &st)) {
-            printf("fstat get error\n");
-            goto Error;
-        }
-        printf("File Size: %lld byte\n", st.st_size);
-        ret = 0;
-    Error:
-        if (fd>=0) {
-            close(fd);
-        }
-        return ret;
-    }
-
-output:
-
-.. code-block:: console
-
-    $ echo "Hello" > hello.txt
-    $ ./a.out hello.txt
-    File Size: 6 byte
-
-
-Copy all content of a file
---------------------------
-
-.. code-block:: c
-
-    #include <stdio.h>
-    #include <sys/types.h>
-    #include <sys/stat.h>
-    #include <fcntl.h>
-    #include <unistd.h>
-
-    #define COPY_BUF_SIZE 1024
-
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        int sfd = -1, dfd = -1;
-        mode_t perm = 0;
-        char *src = NULL;
-        char *dst = NULL;
-        char buf[COPY_BUF_SIZE] = {0};
-        size_t r_size = 0;
-        struct stat st = {0};
-
-        if (argc != 3) {
-            printf("Usage: PROG src dst\n");
-            goto Error;
-        }
-
-        /* open source */
-        src = argv[1];
-        if (-1 == (sfd = open(src, O_RDONLY))) {
-            printf("open source fail\n");
-            goto Error;
-        }
-        /* read source permission */
-        if (-1 == (fstat(sfd, &st))) {
-            printf("fstat file error\n");
-            goto Error;
-        }
-        /* copy destination */
-        dst = argv[2];
-        perm = st.st_mode; /* set file permission */
-        if (-1 == (dfd = open(dst, O_WRONLY | O_CREAT, perm))) {
-            printf("open destination fail\n");
-            goto Error;
-        }
-        while (0 < (r_size = read(sfd, buf, COPY_BUF_SIZE))) {
-            if (r_size != write(dfd, buf, r_size)) {
-                printf("copy file get error\n");
-                goto Error;
-            }
-        }
-        ret = 0;
-    Error:
-        if (sfd >= 0) {
-            close(sfd);
-        }
-        if (dfd >= 0) {
-            close(dfd);
-        }
-        return ret;
-    }
-
-output:
-
-.. code-block:: console
-
-    $ echo "Hello" > hello.txt
-    $ ./a.out hello.txt hello_copy.txt
-    $ diff hello.txt hello_copy.txt
-
-
-Copy some bytes of content to a file
-------------------------------------
+For small to medium files, reading the entire contents into memory simplifies
+processing. This pattern uses ``fseek()`` and ``ftell()`` to determine the file
+size, allocates a buffer, then reads everything with a single ``fread()`` call.
+Be cautious with large files as this approach can exhaust available memory.
 
 .. code-block:: c
 
     #include <stdio.h>
     #include <stdlib.h>
-    #include <sys/types.h>
-    #include <sys/stat.h>
-    #include <unistd.h>
-    #include <fcntl.h>
 
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        int sfd = -1, dfd = -1;
-        size_t s_offset = 0;
-        size_t d_offset = -1;
-        mode_t perm = 0;
-        char *src = NULL;
-        char *dst = NULL;
-        struct stat st = {0};
-        char buf[1024] = {0};
-        size_t size = 0;
-        size_t r_size = 0;
+    int main(int argc, char *argv[]) {
+      FILE *f = fopen(argv[1], "r");
+      if (!f) return 1;
 
-        if (argc != 4) {
-            printf("Usage: PROG src dst bytes\n");
-            goto Error;
-        }
-        /* open source file */
-        src = argv[1];
-        if (0 > (sfd = open(src, O_RDONLY))) {
-            printf("open source file error\n");
-            goto Error;
-        }
-        /* get source file permission */
-        if (-1 == fstat(sfd, &st)) {
-            printf("fstat fail\n");
-            goto Error;
-        }
-        /* open dst file */
-        dst = argv[2];
-        perm = st.st_mode;
-        if (0 > (dfd = open(dst, O_WRONLY | O_CREAT, perm))) {
-            printf("open destination file error\n");
-            goto Error;
-        }
-        if (-1 == (d_offset = lseek(dfd, 0, SEEK_END))) {
-            printf("lseek get error\n");
-            goto Error;
-        }
-        if (-1 == (s_offset = lseek(sfd, d_offset, SEEK_SET))) {
-            printf("lseek get error\n");
-            goto Error;
-        }
-        /* bytes */
-        size = atoi(argv[3]);
-        if (-1 == (r_size = read(sfd, buf, size))) {
-            printf("read content fail\n");
-            goto Error;
-        }
-        if (r_size != write(dfd, buf, r_size)) {
-            printf("write content fail\n");
-            goto Error;
-        }
-        ret = 0;
-    Error:
-        if (sfd >= 0) {
-            close(sfd);
-        }
-        if (dfd >= 0) {
-            close(dfd);
-        }
-        return ret;
+      fseek(f, 0, SEEK_END);
+      long size = ftell(f);
+      rewind(f);
+
+      char *buf = malloc(size + 1);
+      fread(buf, 1, size, f);
+      buf[size] = '\0';
+
+      printf("%s", buf);
+
+      free(buf);
+      fclose(f);
     }
 
-output:
-
-.. code-block:: console
-
-    $ echo "Hello" > hello.txt
-    $ $ ./a.out hello.txt hello_copy.txt 3
-    $ cat hello_copy.txt
-    Hel$./a.out hello.txt hello_copy.txt 3
-    $ cat hello_copy.txt
-    Hello
-    $ diff hello.txt hello_copy.txt
-
-
-Get lines of a file
--------------------
-
-.. code-block:: c
-
-    // basic API: fopen, getline
-
-    #include <stdio.h>
-    #include <stdlib.h>
-
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        FILE *f = NULL;
-        ssize_t read_size = 0;
-        size_t len = 0;
-        char *path = NULL;
-        char *line = NULL;
-
-        if (argc != 2) {
-            printf("Usage: PROG file\n");
-            goto Error;
-        }
-
-        path = argv[1];
-        if (NULL == (f = fopen(path, "r"))) {
-            printf("Read file error");
-            goto Error;
-        }
-
-        while (-1 != getline(&line, &len, f)) {
-            printf("%s\n", line);
-        }
-        ret = 0;
-    Error:
-        if (line) {
-            free(line);
-            line = NULL;
-        }
-        if (f) {
-            fclose(f);
-        }
-        return ret;
-    }
-
-Get lines of a file via ``std::getline``
-----------------------------------------
-
-.. code-block:: cpp
-
-    #include <iostream>
-    #include <fstream>
-    #include <sstream>
-    #include <string>
-
-    int main(int argc, char *argv[])
-    {
-        std::ifstream f(argv[1]);
-        for (std::string line; std::getline(f, line);) {
-            std::cout << line << "\n";
-        }
-    }
-
-Read content into memory from a file
-------------------------------------
-
-.. code-block:: c
-
-    // basick API: fopen, fseek, ftell, rewind, fread
-    #include <stdio.h>
-    #include <stdlib.h>
-
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        FILE *f = NULL;
-        char *path = NULL;
-        int size = 0;
-        int read_size = 0;
-        char *buffer = NULL;
-
-        if (argc != 2) {
-            printf("Usage: PROG file\n");
-            goto Error;
-        }
-
-        path = argv[1];
-        if (NULL == (f = fopen(path, "r"))) {
-            printf("Read %s into memory fail\n", path);
-            goto Error;
-        }
-        fseek(f, 0, SEEK_END);
-        size = ftell(f);
-        rewind(f);
-
-        if (NULL == (buffer = (char *)calloc(size, sizeof(char)))) {
-            printf("malloc file fail\n");
-            goto Error;
-        }
-
-        read_size = fread(buffer, 1, size, f);
-        if (read_size != size) {
-            printf("fread %s fail\n", path);
-            goto Error;
-        }
-        buffer[size-1] = '\0';
-        printf("%s\n", buffer);
-        ret = 0;
-    Error:
-        if (buffer) {
-            free(buffer);
-            buffer = NULL;
-        }
-        if (f) {
-            fclose(f);
-        }
-        return ret;
-    }
-
-Check file types
+Check File Types
 ----------------
 
+:Source: `src/file/file-type <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/file-type>`_
+
+The ``stat()`` function returns file metadata including the file type encoded
+in the ``st_mode`` field. Unix supports several file types: regular files,
+directories, symbolic links, block devices, character devices, FIFOs (named
+pipes), and sockets. The ``S_IFMT`` mask extracts the type bits, and macros
+like ``S_ISREG()`` and ``S_ISDIR()`` provide convenient type checking.
+
 .. code-block:: c
 
     #include <stdio.h>
-    #include <string.h>
     #include <sys/stat.h>
-    #include <sys/types.h>
-    #include <unistd.h>
 
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        struct stat st;
-        char *path = NULL;
+    int main(int argc, char *argv[]) {
+      struct stat st;
+      if (stat(argv[1], &st) < 0) return 1;
 
-        bzero(&st, sizeof(struct stat));
-
-        if (argc != 2) {
-            printf("Usage: PROG file\n");
-            goto Error;
-        }
-        path = argv[1];
-        if (-1 == stat(path, &st)) {
-            printf("stat %s get error\n", path);
-            goto Error;
-        }
-        /* check file type */
-        switch (st.st_mode & S_IFMT) {
-            case S_IFBLK: printf("Block device\n"); break;
-            case S_IFCHR: printf("Character device\n"); break;
-            case S_IFDIR: printf("Directory\n"); break;
-            case S_IFIFO: printf("FIFO pipe\n"); break;
-            case S_IFLNK: printf("Symbolic link\n"); break;
-            case S_IFREG: printf("Regular file\n"); break;
-            case S_IFSOCK: printf("Socket\n"); break;
-            default: printf("Unknown\n");
-        }
-        ret = 0;
-    Error:
-        return ret;
+      switch (st.st_mode & S_IFMT) {
+        case S_IFREG:  printf("Regular file\n"); break;
+        case S_IFDIR:  printf("Directory\n"); break;
+        case S_IFLNK:  printf("Symbolic link\n"); break;
+        case S_IFBLK:  printf("Block device\n"); break;
+        case S_IFCHR:  printf("Character device\n"); break;
+        case S_IFIFO:  printf("FIFO/pipe\n"); break;
+        case S_IFSOCK: printf("Socket\n"); break;
+        default:       printf("Unknown\n");
+      }
     }
-
-output:
 
 .. code-block:: console
 
-    $ ./a.out /etc/hosts
+    $ ./file-type /etc/hosts
     Regular file
-    $ ./a.out /usr
+    $ ./file-type /usr
     Directory
-    ./a.out /dev/tty.Bluetooth-Incoming-Port
+    $ ./file-type /dev/null
     Character device
 
+Directory Tree Walk
+-------------------
 
-File tree walk
----------------
+:Source: `src/file/tree-walk <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/tree-walk>`_
+
+The ``nftw()`` function (new file tree walk) recursively traverses a directory
+tree, calling a user-provided callback for each entry. It handles the complexity
+of opening directories, reading entries, and managing recursion depth. The
+``FTW_DEPTH`` flag processes directory contents before the directory itself
+(post-order), useful for operations like recursive deletion. ``FTW_PHYS``
+prevents following symbolic links.
 
 .. code-block:: c
 
     #define _GNU_SOURCE
     #include <stdio.h>
-    #include <stdlib.h>
-    #include <string.h>
-    #include <errno.h>
     #include <ftw.h>
 
-    #define CHECK_RET(ret, fmt, ...)        \
-        do {                                \
-            if (ret < 0) {                  \
-                printf(fmt, ##__VA_ARGS__); \
-                goto End;                   \
-            }                               \
-        } while(0)
-
-    #define CHECK_NULL(ret, fmt, ...)       \
-        do {                                \
-            if (ret == NULL) {              \
-                printf(fmt, ##__VA_ARGS__); \
-                goto End;                   \
-            }                               \
-        } while(0)
-
-    int callback(const char *fpath, const struct stat *sb, int typeflag, struct FTW *ftwbuf)
-    {
-        CHECK_NULL(fpath, "fpath cannot be NULL\n");
-        printf("%s\n", fpath);
-    End:
-        return 0;
+    int callback(const char *path, const struct stat *sb,
+                 int type, struct FTW *ftwbuf) {
+      printf("%s\n", path);
+      return 0;
     }
 
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        char *path = NULL;
-
-        if (argc != 2) {
-            perror("Usage: PROG [dirpath]\n");
-            goto End;
-        }
-
-        path = argv[1];
-        ret = nftw(path, callback, 64, FTW_DEPTH | FTW_PHYS);
-        CHECK_RET(ret, "nftw(%s) fail. [%s]", path, strerror(errno));
-    End:
-        return ret;
+    int main(int argc, char *argv[]) {
+      nftw(argv[1], callback, 64, FTW_DEPTH | FTW_PHYS);
     }
-
-output:
 
 .. code-block:: console
 
-    $ gcc tree_walk.c
-    $ ./a.out .
-    ./tree_walk.c
+    $ ./tree-walk .
+    ./main.c
     ./a.out
     .
+
+Pipe to Shell Command with ``popen``
+------------------------------------
+
+:Source: `src/file/popen-cmd <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/popen-cmd>`_
+
+The ``popen()`` function creates a pipe to a shell command, returning a
+``FILE*`` stream for reading the command's output or writing to its input.
+This simplifies executing external commands and processing their results
+without manually managing ``fork()``, ``exec()``, and ``pipe()``. Always
+use ``pclose()`` to close the stream and retrieve the command's exit status.
+
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <sys/wait.h>
+
+    int main(void) {
+      FILE *fp = popen("ls -la", "r");
+      if (!fp) return 1;
+
+      char buf[256];
+      while (fgets(buf, sizeof(buf), fp))
+        printf("%s", buf);
+
+      int status = pclose(fp);
+      printf("Exit status: %d\n", WEXITSTATUS(status));
+    }
+
+.. code-block:: console
+
+    $ ./popen-cmd
+    total 32
+    drwxr-xr-x  3 user user 4096 Jan  6 10:00 .
+    -rwxr-xr-x  1 user user 8192 Jan  6 10:00 popen-cmd
+    ...
+    Exit status: 0
+
+Named Pipe (FIFO)
+-----------------
+
+:Source: `src/file/fifo <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/file/fifo>`_
+
+Named pipes (FIFOs) are similar to anonymous pipes but exist as filesystem
+entries, allowing communication between unrelated processes. Create a FIFO
+with ``mkfifo()`` or the ``mkfifo`` command. One process opens it for writing
+and another for reading. The open blocks until both ends are connected.
+FIFOs are useful for simple IPC without the complexity of sockets.
+
+.. code-block:: c
+
+    // writer.c
+    #include <stdio.h>
+    #include <fcntl.h>
+    #include <unistd.h>
+    #include <sys/stat.h>
+
+    int main(void) {
+      mkfifo("/tmp/myfifo", 0666);
+      int fd = open("/tmp/myfifo", O_WRONLY);
+      write(fd, "Hello FIFO", 11);
+      close(fd);
+    }
+
+.. code-block:: c
+
+    // reader.c
+    #include <stdio.h>
+    #include <fcntl.h>
+    #include <unistd.h>
+
+    int main(void) {
+      int fd = open("/tmp/myfifo", O_RDONLY);
+      char buf[128];
+      read(fd, buf, sizeof(buf));
+      printf("Received: %s\n", buf);
+      close(fd);
+      unlink("/tmp/myfifo");
+    }
+
+.. code-block:: console
+
+    # Terminal 1
+    $ ./writer
+
+    # Terminal 2
+    $ ./reader
+    Received: Hello FIFO

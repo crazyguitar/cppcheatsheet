@@ -1,0 +1,7 @@
+add_subdirectory(thread-basic)
+add_subdirectory(mutex)
+add_subdirectory(condvar)
+add_subdirectory(rwlock)
+add_subdirectory(thread-local)
+add_subdirectory(daemon)
+add_subdirectory(daemon-simple)

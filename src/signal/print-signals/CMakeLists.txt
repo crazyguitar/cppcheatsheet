@@ -1,0 +1,3 @@
+add_executable(print_signals_test main.cc)
+target_link_libraries(print_signals_test GTest::gtest_main)
+gtest_discover_tests(print_signals_test)

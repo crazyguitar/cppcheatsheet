@@ -1,0 +1,6 @@
+add_subdirectory(fork-wait)
+add_subdirectory(fork-exec)
+add_subdirectory(waitpid)
+add_subdirectory(pid)
+add_subdirectory(environ)
+add_subdirectory(sysinfo)

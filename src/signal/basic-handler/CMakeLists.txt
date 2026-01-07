@@ -1,0 +1,3 @@
+add_executable(basic_handler_test main.cc)
+target_link_libraries(basic_handler_test GTest::gtest_main)
+gtest_discover_tests(basic_handler_test)

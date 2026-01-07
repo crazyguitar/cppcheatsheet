@@ -641,3 +641,94 @@ in log messages or user interfaces.
     $ ./inet-conv
     IPv4: 192.168.1.1 (0xc0a80101)
     IPv6: ::1
+
+Pipe Communication
+------------------
+
+:Source: `src/socket/pipe <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/socket/pipe>`_
+
+Pipes provide unidirectional inter-process communication. The ``pipe()`` system
+call creates a pair of file descriptors: ``fd[0]`` for reading and ``fd[1]``
+for writing. Data written to the write end can be read from the read end in
+FIFO order. Pipes are commonly used after ``fork()`` to establish communication
+between parent and child processes. The typical pattern is for one process to
+close the read end and write, while the other closes the write end and reads.
+
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <string.h>
+    #include <unistd.h>
+
+    int main(void) {
+      int fd[2];
+      pipe(fd);
+
+      pid_t pid = fork();
+      if (pid == 0) {
+        close(fd[1]);
+        char buf[128];
+        read(fd[0], buf, sizeof(buf));
+        printf("Child received: %s\n", buf);
+        close(fd[0]);
+      } else {
+        close(fd[0]);
+        const char *msg = "Hello from parent";
+        write(fd[1], msg, strlen(msg) + 1);
+        close(fd[1]);
+      }
+    }
+
+.. code-block:: bash
+
+    $ ./pipe
+    Child received: Hello from parent
+
+Bidirectional IPC with ``socketpair``
+-------------------------------------
+
+:Source: `src/socket/socketpair <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/socket/socketpair>`_
+
+Unlike ``pipe()`` which is unidirectional, ``socketpair()`` creates a pair of
+connected Unix domain sockets that support bidirectional communication. Each
+end can both read and write, making it ideal for two-way IPC between related
+processes. This is simpler than creating two pipes for full-duplex communication
+and provides socket semantics including the ability to pass file descriptors
+between processes using ``SCM_RIGHTS``.
+
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <string.h>
+    #include <unistd.h>
+    #include <sys/socket.h>
+    #include <sys/wait.h>
+
+    int main(void) {
+      int fd[2];
+      socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
+
+      pid_t pid = fork();
+      if (pid == 0) {
+        close(fd[0]);
+        char buf[128];
+        read(fd[1], buf, sizeof(buf));
+        printf("Child got: %s\n", buf);
+        write(fd[1], "Hi parent", 10);
+        close(fd[1]);
+      } else {
+        close(fd[1]);
+        write(fd[0], "Hi child", 9);
+        char buf[128];
+        read(fd[0], buf, sizeof(buf));
+        printf("Parent got: %s\n", buf);
+        close(fd[0]);
+        wait(NULL);
+      }
+    }
+
+.. code-block:: bash
+
+    $ ./socketpair
+    Child got: Hi child
+    Parent got: Hi parent

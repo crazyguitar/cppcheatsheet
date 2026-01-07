@@ -1,213 +1,218 @@
-=============================
-C signal operation cheatsheet
-=============================
+================
+Signal Reference
+================
+
+.. meta::
+   :description: C signal handling tutorial with examples for signal handlers, sigaction, pthread signals, blocking/unblocking signals, and child process monitoring on Unix/Linux systems.
+   :keywords: C signal handling, sigaction example, signal handler, SIGINT SIGTERM, pthread signal, sigprocmask, Unix signals, Linux signal programming, POSIX signals, sigwait
 
 .. contents:: Table of Contents
     :backlinks: none
 
-Print signal expression
------------------------
+Introduction
+------------
+
+Signals are software interrupts that provide a mechanism for handling
+asynchronous events in Unix-like operating systems. When a signal is
+delivered to a process, the operating system interrupts the process's
+normal execution flow and invokes a signal handler function.
+
+Signals can originate from various sources: the kernel (e.g., ``SIGSEGV``
+for memory access violations), other processes (via ``kill()``), terminal
+input (e.g., Ctrl+C generates ``SIGINT``), or the process itself (via
+``raise()`` or ``abort()``). Each signal has a default action—typically
+terminating the process, ignoring the signal, or stopping/continuing
+execution—but most signals can be caught and handled by user-defined
+functions.
+
+Understanding signal handling is essential for writing robust Unix
+applications, particularly servers and daemons that must handle
+termination requests gracefully, manage child processes, and respond
+to timer events.
+
+Print Signal Names
+------------------
+
+:Source: `src/signal/print-signals <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/signal/print-signals>`_
+
+The ``sys_siglist`` array (or ``strsignal()`` function) provides human-readable
+names for signal numbers. This is useful for logging and debugging signal-related
+issues. Note that ``sys_siglist`` is deprecated on some systems; prefer
+``strsignal()`` for portable code.
 
 .. code-block:: c
 
     #include <stdio.h>
     #include <signal.h>
 
-    #define ARRAYLEN(arr) sizeof(arr) / sizeof((arr)[0])
-
-    static int signo_arr[] = {
-        SIGABRT , SIGALRM  , SIGBUS,
-        SIGCHLD , SIGCONT  , SIGFPE,
-        SIGHUP  , SIGILL   , SIGINT,
-        SIGIO   , SIGKILL  , SIGPIPE,
-        SIGPROF , SIGQUIT  , SIGSEGV,
-        SIGSYS  , SIGTERM  , SIGTRAP,
-        SIGTSTP , SIGTTIN  , SIGTTOU,
-        SIGURG  , SIGVTALRM, SIGUSR1,
-        SIGUSR2 , SIGXCPU  , SIGXFSZ
+    static int signals[] = {
+        SIGABRT, SIGALRM, SIGBUS,  SIGCHLD, SIGCONT, SIGFPE,
+        SIGHUP,  SIGILL,  SIGINT,  SIGIO,   SIGKILL, SIGPIPE,
+        SIGPROF, SIGQUIT, SIGSEGV, SIGSYS,  SIGTERM, SIGTRAP,
+        SIGTSTP, SIGTTIN, SIGTTOU, SIGURG,  SIGVTALRM, SIGUSR1,
+        SIGUSR2, SIGXCPU, SIGXFSZ
     };
 
-    int main(int argc, char *argv[])
-    {
-        int i = 0;
-        int signo = -1;
-        char *msg = "SIGNAL";
-
-        for (i=0; i < ARRAYLEN(signo_arr); i++) {
-            signo = signo_arr[i];
-            printf("Signal[%d]: %s\n", signo, sys_siglist[signo]);
-        }
-
-        return 0;
+    int main(void) {
+      for (size_t i = 0; i < sizeof(signals)/sizeof(signals[0]); i++)
+        printf("Signal[%2d]: %s\n", signals[i], sys_siglist[signals[i]]);
     }
-
-output:
 
 .. code-block:: console
 
-    $ ./a.out
-    Signal[6]: Abort trap
+    $ ./print-signals
+    Signal[ 6]: Abort trap
     Signal[14]: Alarm clock
     Signal[10]: Bus error
     Signal[20]: Child exited
-    Signal[19]: Continued
-    Signal[8]: Floating point exception
-    Signal[1]: Hangup
-    Signal[4]: Illegal instruction
-    Signal[2]: Interrupt
-    Signal[23]: I/O possible
-    Signal[9]: Killed
-    Signal[13]: Broken pipe
-    Signal[27]: Profiling timer expired
-    Signal[3]: Quit
-    Signal[11]: Segmentation fault
-    Signal[12]: Bad system call
-    Signal[15]: Terminated
-    Signal[5]: Trace/BPT trap
-    Signal[18]: Suspended
-    Signal[21]: Stopped (tty input)
-    Signal[22]: Stopped (tty output)
-    Signal[16]: Urgent I/O condition
-    Signal[26]: Virtual timer expired
-    Signal[30]: User defined signal 1
-    Signal[31]: User defined signal 2
-    Signal[24]: Cputime limit exceeded
-    Signal[25]: Filesize limit exceeded
+    ...
 
+Basic Signal Handler
+--------------------
 
-Basic signal event handler
---------------------------
+:Source: `src/signal/basic-handler <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/signal/basic-handler>`_
+
+The ``signal()`` function registers a handler for a specific signal. When
+that signal is delivered, the kernel interrupts the process and calls the
+handler function with the signal number as its argument. Use ``SIG_IGN``
+to ignore a signal or ``SIG_DFL`` to restore the default behavior. Note
+that ``signal()`` has portability issues across Unix variants; ``sigaction()``
+is preferred for new code.
 
 .. code-block:: c
 
     #include <stdio.h>
     #include <string.h>
     #include <signal.h>
-    #include <errno.h>
-    #include <sys/types.h>
     #include <unistd.h>
 
-    /** singal handler prototype :
-     *
-     *  type void (*sighandler_t) (int)
-     */
-
-    void sig_handler(int signo)
-    {
-        printf("[%d] Get signal: %s\n", getpid(), strsignal(signo));
+    void handler(int signo) {
+      printf("[%d] Got signal: %s\n", getpid(), strsignal(signo));
     }
 
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-
-        /* overwrite default signal handler */
-        if (SIG_ERR == signal(SIGHUP, sig_handler)) {
-            printf("Get error: %s\n", strerror(errno));
-            goto Error;
-        }
-        if (SIG_ERR == signal(SIGINT, sig_handler)) {
-            printf("Get error: %s\n", strerror(errno));
-            goto Error;
-        }
-        if (SIG_ERR == signal(SIGALRM, sig_handler)) {
-            printf("Get error: %s\n", strerror(errno));
-            goto Error;
-        }
-        /* ignore signal */
-        if (SIG_ERR == signal(SIGUSR1, SIG_IGN)) {
-            printf("Get error: %s\n", strerror(errno));
-            goto Error;
-        }
-        while(1) { sleep(3); }
-        ret = 0;
-    Error:
-        return ret;
+    int main(void) {
+      signal(SIGHUP, handler);
+      signal(SIGINT, handler);
+      signal(SIGALRM, handler);
+      signal(SIGUSR1, SIG_IGN);  // ignore SIGUSR1
+      while (1) sleep(3);
     }
-
-output:
 
 .. code-block:: console
 
-    $ ./a.out
-    ^C[54652] Get signal: Interrupt: 2
-    [54652] Get signal: Hangup: 1
-    [54652] Get signal: Alarm clock: 14
+    $ ./basic-handler &
+    [54652] 
+    $ kill -HUP %1
+    [54652] Got signal: Hangup
+    $ kill -INT %1
+    [54652] Got signal: Interrupt
 
+Signal Handling with ``sigaction``
+----------------------------------
 
-A pthread signal handler
-------------------------
+:Source: `src/signal/sigaction-handler <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/signal/sigaction-handler>`_
+
+The ``sigaction()`` function provides more control over signal handling than
+``signal()``. It allows specifying a signal mask to block other signals during
+handler execution, flags to modify behavior (e.g., ``SA_RESTART`` to restart
+interrupted system calls), and access to additional signal information via
+``SA_SIGINFO``. Always prefer ``sigaction()`` over ``signal()`` for reliable,
+portable signal handling.
 
 .. code-block:: c
 
     #include <stdio.h>
-    #include <stdlib.h>
-    #include <pthread.h>
-    #include <errno.h>
     #include <signal.h>
     #include <unistd.h>
 
-    static void *sig_thread(void *arg)
-    {
-        sigset_t *set = (sigset_t *)arg;
-        int err = -1, signo = -1;
-
-        for(;;) {
-            if(0 != (err = sigwait(set, &signo))) {
-                printf("sigwait error\n");
-                goto Error;
-            }
-            printf("Get signal[%d]: %s\n",
-                   signo, sys_siglist[signo]);
-        }
-    Error:
-        return;
+    void handler(int signo) {
+      printf("Got signal: %s\n", sys_siglist[signo]);
     }
 
-    int main(int argc, char *argv[])
-    {
-        pthread_t thread;
-        sigset_t sig_set;
-        int err = -1;
+    int main(void) {
+      struct sigaction sa = {0};
+      sa.sa_handler = handler;
+      sigemptyset(&sa.sa_mask);
+      sa.sa_flags = 0;
 
-        sigemptyset(&sig_set);
-        sigaddset(&sig_set, SIGQUIT);
-        sigaddset(&sig_set, SIGUSR1);
-        /* set signal handler thread sigmask */
-        err = pthread_sigmask(SIG_BLOCK, &sig_set, NULL)
-        if(0 != err) {
-            printf("set pthread_sigmask error\n");
-            goto Error;
-        }
-        /* create signal thread */
-        err = pthread_create(&thread, NULL,
-                             &sig_thread, (void *)&sig_set))
-        if (0 != err) {
-            printf("create pthread error\n");
-            goto Error;
-        }
+      sigaction(SIGINT, NULL, &sa);  // get current
+      if (sa.sa_handler != SIG_IGN)
+        sigaction(SIGINT, &sa, NULL);
 
-        pause();
-    Error:
-        return err;
+      sigaction(SIGHUP, NULL, &sa);
+      if (sa.sa_handler != SIG_IGN)
+        sigaction(SIGHUP, &sa, NULL);
+
+      printf("PID: %d\n", getpid());
+      while (1) sleep(3);
     }
-
-output:
 
 .. code-block:: console
 
-    $ ./a.out &
+    $ ./sigaction-handler &
+    PID: 57140
+    $ kill -HUP 57140
+    Got signal: Hangup
+    $ kill -INT 57140
+    Got signal: Interrupt
+
+Pthread Signal Handling
+-----------------------
+
+:Source: `src/signal/pthread-signal <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/signal/pthread-signal>`_
+
+In multithreaded programs, signals can be delivered to any thread that hasn't
+blocked them. A common pattern is to block signals in all threads except a
+dedicated signal-handling thread that uses ``sigwait()`` to synchronously
+receive signals. This avoids the complexity and restrictions of asynchronous
+signal handlers in threaded code.
+
+.. code-block:: c
+
+    #include <stdio.h>
+    #include <pthread.h>
+    #include <signal.h>
+
+    void *sig_thread(void *arg) {
+      sigset_t *set = (sigset_t *)arg;
+      int signo;
+      for (;;) {
+        sigwait(set, &signo);
+        printf("Got signal[%d]: %s\n", signo, sys_siglist[signo]);
+      }
+    }
+
+    int main(void) {
+      sigset_t set;
+      sigemptyset(&set);
+      sigaddset(&set, SIGQUIT);
+      sigaddset(&set, SIGUSR1);
+      pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+      pthread_t t;
+      pthread_create(&t, NULL, sig_thread, &set);
+      pause();
+    }
+
+.. code-block:: console
+
+    $ ./pthread-signal &
     [1] 21258
     $ kill -USR1 %1
-    Get signal[10]: User defined signal 1
+    Got signal[10]: User defined signal 1
     $ kill -QUIT %1
-    Get signal[3]: Quit
-    $ kill -TERM %1
-    [1]+  Terminated              ./a.out
+    Got signal[3]: Quit
 
+Monitoring Child Processes
+--------------------------
 
-Check child process alive
--------------------------
+:Source: `src/signal/child-monitor <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/signal/child-monitor>`_
+
+When a child process terminates, the kernel sends ``SIGCHLD`` to the parent.
+By installing a handler for ``SIGCHLD``, the parent can be notified immediately
+when children exit, rather than blocking in ``wait()``. This is essential for
+servers that spawn worker processes and need to track their lifecycle without
+blocking the main event loop.
 
 .. code-block:: c
 
@@ -215,163 +220,79 @@ Check child process alive
     #include <unistd.h>
     #include <signal.h>
 
-    void handler(int signo)
-    {
-        pid_t pid = getpid();
-        printf("[%i] Got signal[%d]: %s\n",
-               pid, signo, sys_siglist[signo]);
+    void handler(int signo) {
+      printf("[%d] Got signal[%d]: %s\n", getpid(), signo, sys_siglist[signo]);
     }
 
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        pid_t pid = -1;
+    int main(void) {
+      signal(SIGCHLD, handler);
+      pid_t pid = fork();
 
-        pid = fork();
-        signal(SIGCHLD, handler);
-        if (pid < 0) {
-            printf("Fork failed\n");
-            goto Error;
-        } else if (pid == 0) {
-            /* child */
-            printf("Child[%i]\n", getpid());
-            sleep(3);
-        } else {
-            printf("Parent[%i]\n", getpid());
-            pause();
-        }
-        ret = 0;
-    Error:
-        return ret;
+      if (pid == 0) {
+        printf("Child[%d]\n", getpid());
+        sleep(3);
+      } else {
+        printf("Parent[%d]\n", getpid());
+        pause();
+      }
     }
 
 .. code-block:: console
 
-    $ ./a.out
+    $ ./child-monitor
     Parent[59113]
     Child[59114]
     [59113] Got signal[20]: Child exited
 
+Blocking and Unblocking Signals
+-------------------------------
 
-Basic sigaction usage
----------------------
+:Source: `src/signal/signal-mask <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/signal/signal-mask>`_
+
+The ``sigprocmask()`` function controls which signals are blocked (deferred)
+for the calling thread. Blocked signals remain pending until unblocked, at
+which point they are delivered. This is useful for protecting critical sections
+from interruption or for temporarily deferring signal handling. Combined with
+``siglongjmp()``, it enables complex control flow in signal handlers.
 
 .. code-block:: c
 
     #include <stdio.h>
     #include <signal.h>
-    #include <sys/types.h>
     #include <unistd.h>
-
-    void handler(int signo)
-    {
-        printf("Get Signal: %s\n",sys_siglist[signo]);
-    }
-
-    int main(int argc, char *argv[])
-    {
-        pid_t pid = -1;
-        struct sigaction new_sa = {0};
-        struct sigaction old_sa = {0};
-
-        new_sa.sa_handler = handler;
-        sigemptyset(&new_sa.sa_mask);
-        new_sa.sa_flags = 0;
-
-        pid = getpid();
-        printf("Process PID: %i\n", pid);
-        /* if signal not ignore, overwrite its handler */
-        sigaction(SIGINT, NULL, &old_sa);
-        if (old_sa.sa_handler != SIG_IGN) {
-            sigaction(SIGINT, &new_sa, NULL);
-        }
-
-        sigaction(SIGHUP, NULL, &old_sa);
-        if (old_sa.sa_handler != SIG_IGN) {
-            sigaction(SIGHUP, &new_sa, NULL);
-        }
-        while (1) { sleep(3); }
-        return 0;
-    }
-
-output:
-
-.. code-block:: console
-
-    # bash 1
-    kill -1 57140
-    kill -2 57140
-
-    # bash 2
-    $ ./a.out
-    Process PID: 57140
-    Get Signal: Hangup
-    Get Signal: Interrupt
-
-
-Block & Unblock signal
-----------------------
-
-.. code-block:: c
-
-    #include <stdio.h>
-    #include <string.h>
-    #include <errno.h>
-    #include <unistd.h>
-    #include <signal.h>
     #include <setjmp.h>
 
     static sigjmp_buf jmpbuf;
 
-    void handler(int signo)
-    {
-        printf("Get signal[%d]: %s\n", signo, sys_siglist[signo]);
-        if (SIGUSR1 == signo) {
-            siglongjmp(jmpbuf, 1);
-        }
+    void handler(int signo) {
+      printf("Got signal[%d]: %s\n", signo, sys_siglist[signo]);
+      if (signo == SIGUSR1)
+        siglongjmp(jmpbuf, 1);
     }
 
-    int main(int argc, char *argv[])
-    {
-        int ret = -1;
-        sigset_t new_mask, old_mask;
+    int main(void) {
+      sigset_t mask;
+      sigemptyset(&mask);
+      sigaddset(&mask, SIGHUP);
 
-        sigemptyset(&new_mask);
-        sigaddset(&new_mask, SIGHUP);
+      signal(SIGHUP, handler);
+      signal(SIGALRM, handler);
+      signal(SIGUSR1, handler);
 
-        if (SIG_ERR == signal(SIGHUP, handler)) {
-                printf("Set signal get %s error", strerror(errno));
-                goto Error;
-        }
-        if (SIG_ERR == signal(SIGALRM, handler)) {
-                printf("Set signal get %s error", strerror(errno));
-                goto Error;
-        }
-        if (SIG_ERR == signal(SIGUSR1, handler)) {
-                printf("Set signal get %s error", strerror(errno));
-                goto Error;
-        }
-        /* block SIGHUP */
-        if (sigsetjmp(jmpbuf, 1)) {
-                /* unblock SIGHUP */
-                sigprocmask(SIG_UNBLOCK, &new_mask, &old_mask);
-        } else {
-                /* block SIGHUP */
-                sigprocmask(SIG_BLOCK, &new_mask, &old_mask);
-        }
-        while (1) sleep(3);
-        ret = 0;
-    Error:
-        return ret;
+      if (sigsetjmp(jmpbuf, 1))
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);  // unblock after jump
+      else
+        sigprocmask(SIG_BLOCK, &mask, NULL);    // block SIGHUP
+
+      while (1) sleep(3);
     }
-
-output:
 
 .. code-block:: console
 
-    $ kill -HUP %1
+    $ ./signal-mask &
+    $ kill -HUP %1      # blocked, no output
     $ kill -ALRM %1
-    Get signal[14]: Alarm clock
-    $ kill -USR1 %1
-    Get signal[10]: User defined signal 1
-    Get signal[1]: Hangup
+    Got signal[14]: Alarm clock
+    $ kill -USR1 %1     # triggers jump, unblocks SIGHUP
+    Got signal[10]: User defined signal 1
+    Got signal[1]: Hangup
