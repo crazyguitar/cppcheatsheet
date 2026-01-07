@@ -2,6 +2,7 @@ if(ENABLE_CUDA)
   enable_language(CUDA)
   set(CMAKE_CUDA_STANDARD 17)
   set(CMAKE_CUDA_ARCHITECTURES native)
+  add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
 
   add_executable(cuda-function-qualifiers function-qualifiers/main.cu)
   target_link_libraries(cuda-function-qualifiers GTest::gtest_main)
@@ -34,4 +35,24 @@ if(ENABLE_CUDA)
   add_executable(cuda-memory-benchmark memory-benchmark/main.cu)
   target_link_libraries(cuda-memory-benchmark GTest::gtest_main)
   gtest_discover_tests(cuda-memory-benchmark)
+
+  add_executable(cuda-coop-groups-basic coop-groups-basic/main.cu)
+  target_link_libraries(cuda-coop-groups-basic GTest::gtest_main)
+  gtest_discover_tests(cuda-coop-groups-basic)
+
+  add_executable(cuda-coop-groups-reduce coop-groups-reduce/main.cu)
+  target_link_libraries(cuda-coop-groups-reduce GTest::gtest_main)
+  gtest_discover_tests(cuda-coop-groups-reduce)
+
+  add_executable(cuda-coop-groups-tile coop-groups-tile/main.cu)
+  target_link_libraries(cuda-coop-groups-tile GTest::gtest_main)
+  gtest_discover_tests(cuda-coop-groups-tile)
+
+  add_executable(cuda-coop-groups-coalesced coop-groups-coalesced/main.cu)
+  target_link_libraries(cuda-coop-groups-coalesced GTest::gtest_main)
+  gtest_discover_tests(cuda-coop-groups-coalesced)
+
+  add_executable(cuda-coop-groups-ptx coop-groups-ptx/main.cu)
+  target_link_libraries(cuda-coop-groups-ptx GTest::gtest_main)
+  gtest_discover_tests(cuda-coop-groups-ptx)
 endif()

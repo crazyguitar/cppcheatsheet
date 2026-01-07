@@ -48,6 +48,7 @@ CUDA Programming
 ================
 
 - `CUDA Basics <docs/notes/cuda/cuda_basics.rst>`_
+- `Cooperative Groups <docs/notes/cuda/coop_groups.rst>`_
 
 Bash & System Tools
 ===================

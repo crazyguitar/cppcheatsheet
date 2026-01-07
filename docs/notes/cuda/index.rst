@@ -26,3 +26,4 @@ optimizing memory access patterns.
    :maxdepth: 1
 
    cuda_basics
+   coop_groups
