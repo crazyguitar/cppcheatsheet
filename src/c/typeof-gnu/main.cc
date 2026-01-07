@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
 
-#define SWAP(a, b) do {   \
-    auto _tmp = (a);      \
-    (a) = (b);            \
-    (b) = _tmp;           \
-} while (0)
+#define SWAP(a, b)   \
+  do {               \
+    auto _tmp = (a); \
+    (a) = (b);       \
+    (b) = _tmp;      \
+  } while (0)
 
 TEST(TypeofGnu, SwapMacro) {
   int i = 5, j = 10;

@@ -21,4 +21,4 @@ fundamentals for low-level optimization and hardware interaction.
    c_basic
    c_macro
    c_make
-   asm_basic
+   asm

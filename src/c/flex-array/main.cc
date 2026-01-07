@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include <cstdlib>
 #include <cstring>
 
@@ -8,10 +9,10 @@ struct Message {
 };
 
 TEST(FlexArray, VariableSizeStruct) {
-  const char *text = "Hello";
+  const char* text = "Hello";
   int len = strlen(text);
 
-  Message *msg = (Message *)malloc(sizeof(Message) + len + 1);
+  Message* msg = (Message*)malloc(sizeof(Message) + len + 1);
   msg->length = len;
   strcpy(msg->data, text);
 

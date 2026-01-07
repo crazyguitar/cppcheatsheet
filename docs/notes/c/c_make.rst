@@ -2,11 +2,32 @@
 C Makefile cheatsheet
 ======================
 
+.. meta::
+   :description: GNU Make reference for C projects covering automatic variables, string functions, pattern rules, shared libraries, and recursive builds.
+   :keywords: Makefile, GNU Make, C build system, automatic variables, pattern rules, shared library, static library, recursive make
+
 .. contents:: Table of Contents
     :backlinks: none
 
-Automatic variables
---------------------
+Introduction
+------------
+
+GNU Make is the standard build automation tool for C and C++ projects, using
+Makefiles to define compilation rules and dependencies. Make tracks file
+modification times to rebuild only what has changed, dramatically speeding up
+incremental builds. This reference covers essential Make features from automatic
+variables and string functions to building shared libraries and recursive project
+structures. Understanding Make is fundamental for systems programming and
+contributes to faster development cycles.
+
+Automatic Variables
+-------------------
+
+Automatic variables are set by Make for each rule and provide access to target
+and prerequisite names without hardcoding. These variables enable writing generic
+pattern rules that work across different files. The most common are ``$@`` for
+the target, ``$<`` for the first prerequisite, and ``$^`` for all prerequisites
+with duplicates removed.
 
 +------------------------+-----------------------------------------------------------------+
 |   automatic variables  |        descriptions                                             |
@@ -59,6 +80,12 @@ output
 using ``$(warning text)`` check make rules (for debug)
 --------------------------------------------------------
 
+The ``$(warning text)`` function prints a message during Makefile parsing without
+stopping execution, making it invaluable for debugging complex Makefiles. By
+placing warnings at strategic points, you can trace variable expansion order,
+understand when rules are evaluated, and identify why variables have unexpected
+values. Unlike ``$(error)``, warnings allow the build to continue.
+
 .. code-block:: make
 
     $(warning Top level warning)
@@ -84,8 +111,15 @@ output
     Makefile:7: tagrget script
     Makefile
 
-string functions
------------------
+String Functions
+----------------
+
+Make provides powerful string manipulation functions for transforming file lists,
+extracting components, and pattern matching. These functions operate on
+whitespace-separated words and are essential for deriving object file lists from
+sources, filtering files by pattern, and performing substitutions. Common functions
+include ``subst``, ``patsubst``, ``filter``, ``filter-out``, and word extraction
+functions.
 
 Makefile
 
@@ -178,6 +212,11 @@ output
 using ``$(sort list)`` sort list and remove duplicates
 -------------------------------------------------------
 
+The ``$(sort list)`` function sorts words lexicographically and removes duplicates
+in a single operation. This is particularly useful for normalizing file lists,
+ensuring consistent ordering in builds, and eliminating redundant entries that
+might cause duplicate symbol errors during linking.
+
 Makefile
 
 .. code-block:: make
@@ -198,8 +237,14 @@ output
     .c .c .c .h .h .h
     .c .h
 
-single dollar sign and double dollar sign
+Single Dollar Sign and Double Dollar Sign
 ------------------------------------------
+
+Understanding dollar sign escaping is crucial when mixing Make variables with
+shell commands. A single ``$`` references Make variables and is expanded before
+the shell sees the command. A double ``$$`` escapes to a single ``$`` for the
+shell, allowing access to shell variables and loop counters within recipes. This
+distinction is a common source of confusion in Makefiles.
 
 +-------------+-----------------------------------------+
 | dollar sign | descriptions                            |
@@ -247,8 +292,14 @@ output
     three
 
 
-build executable files respectively
+Build Executable Files Respectively
 ------------------------------------
+
+This pattern demonstrates building multiple executables from individual source
+files using implicit rules and wildcard functions. The ``$(wildcard)`` function
+finds all matching files, and substitution patterns derive object and executable
+names. This approach scales automatically as new source files are added to the
+directory.
 
 directory layout
 
@@ -292,6 +343,12 @@ output
 
 using ``$(eval)`` predefine variables
 --------------------------------------
+
+The ``$(eval)`` function parses its argument as Makefile syntax, enabling dynamic
+rule and variable generation. Combined with ``$(call)`` and ``$(foreach)``, it
+allows creating per-target variables and rules programmatically. Without ``eval``,
+the generated text is treated as literal output rather than Makefile constructs,
+causing syntax errors.
 
 without ``$(eval)``
 
@@ -349,8 +406,13 @@ output
     libbar.so
 
 
-build subdir and link together
+Build Subdir and Link Together
 -------------------------------
+
+This pattern compiles source files from a subdirectory and links them into a
+single executable. The ``-I`` flag adds include paths, and pattern rules handle
+the compilation. This structure separates headers, sources, and build artifacts
+while maintaining a clean project layout.
 
 directory layout
 
@@ -396,8 +458,14 @@ output
     cc  -o main src/foo.o src/main.o
 
 
-build shared library
+Build Shared Library
 ---------------------
+
+Shared libraries (``.so`` files) allow code reuse across multiple programs and
+reduce memory usage through shared memory mapping. Building them requires
+position-independent code (``-fPIC``) and the ``-shared`` linker flag. The
+``-Wl,-soname`` option embeds the library's canonical name for runtime linking,
+enabling version management through symbolic links.
 
 directory layout
 
@@ -446,8 +514,14 @@ output
     cc -shared -Wl,-soname,libfoobar.so.1 -o src/libfoobar.so.1.0.0 src/foo.o src/bar.o
 
 
-build shared and static library
+Build Shared and Static Library
 --------------------------------
+
+This example builds both static (``.a``) and shared (``.so``) libraries from the
+same source files. Static libraries are archives of object files linked directly
+into executables, while shared libraries are loaded at runtime. The symbolic
+links (``libfoo.so`` → ``libfoo.so.1`` → ``libfoo.so.1.0.0``) follow the standard
+versioning convention for ABI compatibility.
 
 directory layout
 
@@ -536,8 +610,14 @@ output
     make[1]: Leaving directory '/root/test/src'
 
 
-build recursively
---------------------
+Build Recursively
+------------------
+
+Recursive Make invokes Make in subdirectories, enabling modular project structures
+where each component has its own Makefile. The ``$(MAKE)`` variable ensures proper
+propagation of flags and job server connections for parallel builds. The
+``$(MAKECMDGOALS)`` variable passes the original target (e.g., ``clean``) to
+subdirectory Makefiles.
 
 directory layout
 
@@ -665,8 +745,13 @@ output
     3 directories, 14 files
 
 
-replace current shell
+Replace Current Shell
 ----------------------
+
+Make normally uses ``/bin/sh`` to execute recipe commands, but the ``SHELL``
+variable can be overridden to use any interpreter. This enables writing recipes
+in Python, Perl, or other languages directly in the Makefile, though it reduces
+portability and should be used sparingly.
 
 .. code-block:: make
 
@@ -686,8 +771,14 @@ output
     Linux
 
 
-one line condition
+One Line Condition
 -------------------
+
+The ``$(if condition,then-part,else-part)`` function provides inline conditional
+logic for variable assignments and function calls. The condition is true if it
+expands to any non-empty string. This is useful for setting defaults, conditional
+flags, and adapting behavior based on variable values without verbose ``ifdef``
+blocks.
 
 syntax: ``$(if cond, then part, else part)``
 
@@ -714,8 +805,14 @@ output
     not empty
 
 
-Using define to control CFLAGS
---------------------------------
+Using Define to Control CFLAGS
+-------------------------------
+
+The ``ifdef`` directive tests whether a variable is defined, enabling conditional
+compilation flags. This pattern allows enabling debug symbols, sanitizers, or
+optimization levels from the command line without modifying the Makefile. Variables
+can be set via ``make VAR=value`` or environment variables, providing flexible
+build configuration.
 
 Makefile
 

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include <cstdint>
 
 struct __attribute__((packed)) PackedStruct {
