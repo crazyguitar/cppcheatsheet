@@ -10,9 +10,8 @@ Documentation Status
 Modern C Programming
 ====================
 
-- `From Scratch <docs/notes/c/c_basic.rst>`_
-- `GNU C Extension <docs/notes/c/c_gnuext.rst>`_
-- `Macro <docs/notes/c/c_macro.rst>`_
+- `C Basics <docs/notes/c/c_basic.rst>`_
+- `Preprocessor & GNU Extensions <docs/notes/c/c_macro.rst>`_
 - `Makefile <docs/notes/c/c_make.rst>`_
 - `X86 Assembly <docs/notes/c/asm_basic.rst>`_
 

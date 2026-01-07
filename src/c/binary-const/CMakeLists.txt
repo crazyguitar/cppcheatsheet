@@ -1,0 +1,3 @@
+add_executable(binary_const_test main.cc)
+target_link_libraries(binary_const_test GTest::gtest_main)
+gtest_discover_tests(binary_const_test)

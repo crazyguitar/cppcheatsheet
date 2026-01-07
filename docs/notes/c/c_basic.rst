@@ -479,6 +479,8 @@ guarantee no aliasing, particularly in performance-critical functions like
 ``_Static_assert`` (C11)
 ------------------------
 
+:Source: `src/c/static-assert <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/static-assert>`_
+
 Static assertions verify conditions at compile time, catching errors before
 runtime. Unlike ``assert()``, ``_Static_assert`` has zero runtime cost and
 fails during compilation if the condition is false. Use it to validate type
@@ -510,6 +512,8 @@ message string.
 
 ``_Generic`` Type Selection (C11)
 ---------------------------------
+
+:Source: `src/c/generic <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/generic>`_
 
 ``_Generic`` enables type-generic macros by selecting expressions based on the
 type of the controlling expression. This provides a form of function overloading
@@ -555,6 +559,8 @@ selection happens at compile time with no runtime overhead.
 Anonymous Structs and Unions (C11)
 ----------------------------------
 
+:Source: `src/c/anon-struct <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/anon-struct>`_
+
 Anonymous structs and unions allow nested members to be accessed directly
 without an intermediate name. This simplifies code when wrapping related fields
 or creating variant types. The inner struct/union members become direct members
@@ -594,6 +600,8 @@ of the enclosing struct.
 Atomics (C11)
 -------------
 
+:Source: `src/c/atomics <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/atomics>`_
+
 The ``<stdatomic.h>`` header provides atomic types and operations for lock-free
 concurrent programming. Atomic operations are indivisible—no other thread can
 observe a partial update. Use atomics for simple shared counters and flags;
@@ -632,6 +640,8 @@ for complex data structures, prefer mutexes.
 ``_Alignas`` and ``_Alignof`` (C11)
 -----------------------------------
 
+:Source: `src/c/alignas <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/alignas>`_
+
 ``_Alignas`` specifies alignment requirements for variables, useful for SIMD
 operations, cache optimization, and hardware interfaces. ``_Alignof`` queries
 the alignment requirement of a type. The ``<stdalign.h>`` header provides
@@ -668,6 +678,8 @@ the alignment requirement of a type. The ``<stdalign.h>`` header provides
 ``_Noreturn`` Functions (C11)
 -----------------------------
 
+:Source: `src/c/noreturn <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/noreturn>`_
+
 The ``_Noreturn`` specifier indicates a function never returns to its caller,
 either because it exits the program, loops forever, or always throws. This
 enables compiler optimizations and suppresses "missing return" warnings. C23
@@ -700,6 +712,8 @@ deprecates ``_Noreturn`` in favor of the ``[[noreturn]]`` attribute.
 
 ``typeof`` and ``auto`` (C23)
 -----------------------------
+
+:Source: `src/c/typeof <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/typeof>`_
 
 C23 adds ``typeof`` to deduce types from expressions and ``auto`` for type
 inference in variable declarations. These features reduce repetition and make
@@ -744,6 +758,8 @@ a GNU extension; C23 standardizes it.
 ``nullptr`` (C23)
 -----------------
 
+:Source: `src/c/nullptr-test <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/nullptr-test>`_
+
 C23 introduces ``nullptr`` as a proper null pointer constant with its own type
 ``nullptr_t``. Unlike ``NULL`` (which is typically ``(void *)0`` or ``0``),
 ``nullptr`` is unambiguous and type-safe. It cannot be implicitly converted to
@@ -783,6 +799,8 @@ integer types, preventing common bugs.
 ``constexpr`` (C23)
 -------------------
 
+:Source: `src/c/constexpr-c <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/constexpr-c>`_
+
 C23 extends ``constexpr`` to allow compile-time constant expressions for
 variables. Unlike ``const``, which merely prevents modification, ``constexpr``
 guarantees the value is computed at compile time and can be used in contexts
@@ -816,6 +834,8 @@ requiring constant expressions like array sizes.
 
 Attributes (C23)
 ----------------
+
+:Source: `src/c/attributes <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/c/attributes>`_
 
 C23 standardizes attributes using the ``[[attribute]]`` syntax, replacing
 compiler-specific extensions. Common attributes include ``[[nodiscard]]`` for
