@@ -95,4 +95,20 @@ if(ENABLE_CUDA)
   add_executable(cuda-vmm vmm/main.cu)
   target_link_libraries(cuda-vmm GTest::gtest_main cuda)
   gtest_discover_tests(cuda-vmm)
+
+  add_executable(cuda-libcuxx-atomic libcuxx-atomic/main.cu)
+  target_link_libraries(cuda-libcuxx-atomic GTest::gtest_main)
+  gtest_discover_tests(cuda-libcuxx-atomic)
+
+  add_executable(cuda-libcuxx-barrier libcuxx-barrier/main.cu)
+  target_link_libraries(cuda-libcuxx-barrier GTest::gtest_main)
+  gtest_discover_tests(cuda-libcuxx-barrier)
+
+  add_executable(cuda-libcuxx-semaphore libcuxx-semaphore/main.cu)
+  target_link_libraries(cuda-libcuxx-semaphore GTest::gtest_main)
+  gtest_discover_tests(cuda-libcuxx-semaphore)
+
+  add_executable(cuda-libcuxx-latch libcuxx-latch/main.cu)
+  target_link_libraries(cuda-libcuxx-latch GTest::gtest_main)
+  gtest_discover_tests(cuda-libcuxx-latch)
 endif()

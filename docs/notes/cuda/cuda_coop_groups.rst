@@ -59,7 +59,9 @@ Query group size and thread position within the group.
 Synchronization
 ~~~~~~~~~~~~~~~
 
-Barrier synchronization - all threads must reach before any proceed.
+Barrier synchronization - all threads must reach before any proceed. For
+advanced barrier patterns with split arrive/wait, see ``cuda::barrier`` in
+:doc:`cuda_cpp`.
 
 .. code-block:: cuda
 

@@ -26,7 +26,8 @@ optimizing memory access patterns.
    :maxdepth: 1
 
    cuda_basics
-   coop_groups
-   memory_visibility
-   pipelines
-   ipc
+   cuda_cpp
+   cuda_coop_groups
+   cuda_memory_visibility
+   cuda_pipelines
+   cuda_ipc

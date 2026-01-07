@@ -1,6 +1,6 @@
-========
-CUDA IPC
-========
+=====================
+GPU-GPU Communication
+=====================
 
 .. meta::
    :description: CUDA Inter-Process Communication (IPC) and P2P direct access for multi-GPU programming.

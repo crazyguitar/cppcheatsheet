@@ -48,10 +48,11 @@ CUDA Programming
 ================
 
 - `CUDA Basics <docs/notes/cuda/cuda_basics.rst>`_
-- `Cooperative Groups <docs/notes/cuda/coop_groups.rst>`_
-- `Memory Visibility <docs/notes/cuda/memory_visibility.rst>`_
-- `Pipelines <docs/notes/cuda/pipelines.rst>`_
-- `IPC & P2P <docs/notes/cuda/ipc.rst>`_
+- `CUDA C++ (libcu++) <docs/notes/cuda/cuda_cpp.rst>`_
+- `Cooperative Groups <docs/notes/cuda/cuda_coop_groups.rst>`_
+- `Memory Visibility <docs/notes/cuda/cuda_memory_visibility.rst>`_
+- `Pipelines <docs/notes/cuda/cuda_pipelines.rst>`_
+- `GPU-GPU Communication <docs/notes/cuda/cuda_ipc.rst>`_
 
 Bash & System Tools
 ===================

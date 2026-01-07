@@ -239,6 +239,107 @@ independent work between arrive and wait.
 | ``bar.arrive_and_drop()`` | Thread exits early, reduces expected count     |
 +---------------------------+------------------------------------------------+
 
+Semaphores (cuda::counting_semaphore)
+-------------------------------------
+
+Semaphores control access to limited resources by maintaining a counter. Threads
+call ``acquire()`` to decrement the counter (blocking if zero) and ``release()``
+to increment it. Unlike barriers which synchronize all threads at a point,
+semaphores limit how many threads can be in a critical section simultaneously.
+
+:Source: `src/cuda/libcuxx <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/libcuxx>`_
+
+**counting_semaphore** allows up to N concurrent accesses. The template parameter
+specifies the maximum count. Use for resource pools, rate limiting, or bounded
+producer-consumer queues.
+
+**binary_semaphore** (max count = 1) acts as a mutex. Only one thread can hold
+it at a time. Simpler than a full mutex implementation but provides the same
+mutual exclusion guarantee.
+
+.. code-block:: cuda
+
+    #include <cuda/semaphore>
+
+    // Limit to 4 concurrent threads in critical section
+    __device__ cuda::counting_semaphore<cuda::thread_scope_device, 4> sem{4};
+
+    __global__ void limited_concurrency_kernel() {
+      sem.acquire();  // Blocks if 4 threads already inside
+      // ... critical section (max 4 threads here) ...
+      sem.release();  // Allow another thread to enter
+    }
+
+    // Binary semaphore as mutex (only 1 thread at a time)
+    __device__ cuda::binary_semaphore<cuda::thread_scope_device> mtx{1};
+
+    __global__ void mutex_kernel(int* counter) {
+      mtx.acquire();
+      (*counter)++;   // Only one thread executes this at a time
+      mtx.release();
+    }
+
+**Semaphore vs Barrier vs Atomic:**
+
++------------------+----------------------------------+----------------------------------+
+| Primitive        | Purpose                          | Threads Affected                 |
++==================+==================================+==================================+
+| Barrier          | All threads sync at a point      | All N threads must arrive        |
++------------------+----------------------------------+----------------------------------+
+| Semaphore        | Limit concurrent access          | Up to N threads proceed          |
++------------------+----------------------------------+----------------------------------+
+| Atomic           | Single indivisible operation     | One thread at a time per op      |
++------------------+----------------------------------+----------------------------------+
+
+Latches (cuda::latch)
+---------------------
+
+A latch is a single-use synchronization primitive. Threads call ``count_down()``
+to decrement an internal counter, and ``wait()`` blocks until the counter reaches
+zero. Unlike barriers, latches cannot be reused—once the counter hits zero, the
+latch is "spent." This makes latches ideal for one-time initialization or
+fan-in patterns where multiple threads contribute to a single completion event.
+
+:Source: `src/cuda/libcuxx <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/libcuxx>`_
+
+.. code-block:: cuda
+
+    #include <cuda/latch>
+
+    __global__ void latch_kernel() {
+      __shared__ cuda::latch<cuda::thread_scope_block> lat;
+
+      auto block = cooperative_groups::this_thread_block();
+      if (block.thread_rank() == 0) {
+        init(&lat, block.size());  // Initialize with expected count
+      }
+      block.sync();
+
+      // Each thread does work then signals completion
+      do_work();
+      lat.count_down();  // Decrement counter (non-blocking)
+
+      // Wait for all threads to finish
+      lat.wait();  // Blocks until counter reaches 0
+
+      // All threads proceed together
+    }
+
+    // Combined count_down + wait
+    lat.arrive_and_wait();  // Equivalent to count_down() followed by wait()
+
+**Latch vs Barrier:**
+
++------------------+----------------------------------+----------------------------------+
+| Aspect           | Latch                            | Barrier                          |
++==================+==================================+==================================+
+| Reusability      | Single-use (one-shot)            | Reusable (multiple phases)       |
++------------------+----------------------------------+----------------------------------+
+| count_down()     | Decrement only                   | N/A (arrive returns token)       |
++------------------+----------------------------------+----------------------------------+
+| Use case         | One-time init, fan-in            | Iterative algorithms, phases     |
++------------------+----------------------------------+----------------------------------+
+
 cuda::std::atomic (libcu++)
 ---------------------------
 
@@ -493,7 +594,8 @@ Quick Reference
 
 Use the narrowest scope possible for best performance—block scope is much faster
 than system scope. Prefer ``cuda::atomic`` for readability; use PTX only when
-optimizing hot paths.
+optimizing hot paths. For higher-level synchronization primitives like semaphores
+and latches, see :doc:`cuda_cpp`.
 
 **When to Use What:**
 
