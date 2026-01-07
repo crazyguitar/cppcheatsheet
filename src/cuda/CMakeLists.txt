@@ -59,4 +59,20 @@ if(ENABLE_CUDA)
   add_executable(cuda-coop-groups-cheatsheet coop-groups-cheatsheet/main.cu)
   target_link_libraries(cuda-coop-groups-cheatsheet GTest::gtest_main)
   gtest_discover_tests(cuda-coop-groups-cheatsheet)
+
+  add_executable(cuda-memory-visibility-primitives memory-visibility-primitives/main.cu)
+  target_link_libraries(cuda-memory-visibility-primitives GTest::gtest_main)
+  gtest_discover_tests(cuda-memory-visibility-primitives)
+
+  add_executable(cuda-memory-visibility-libcu memory-visibility-libcu/main.cu)
+  target_link_libraries(cuda-memory-visibility-libcu GTest::gtest_main)
+  gtest_discover_tests(cuda-memory-visibility-libcu)
+
+  add_executable(cuda-memory-visibility-ptx memory-visibility-ptx/main.cu)
+  target_link_libraries(cuda-memory-visibility-ptx GTest::gtest_main)
+  gtest_discover_tests(cuda-memory-visibility-ptx)
+
+  add_executable(cuda-memory-visibility-patterns memory-visibility-patterns/main.cu)
+  target_link_libraries(cuda-memory-visibility-patterns GTest::gtest_main)
+  gtest_discover_tests(cuda-memory-visibility-patterns)
 endif()

@@ -19,6 +19,7 @@ add_subdirectory(thread)
 add_subdirectory(process)
 add_subdirectory(asm)
 add_subdirectory(c)
+add_subdirectory(cpp)
 
 if(ENABLE_CUDA)
   add_subdirectory(cuda)
