@@ -29,6 +29,7 @@ manipulation using STL containers and algorithms.
    cpp_casting
    cpp_constexpr
    cpp_lambda
+   cpp_requires
    cpp_smartpointers
    cpp_rvo
    cpp_algorithm

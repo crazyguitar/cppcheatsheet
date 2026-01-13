@@ -1,0 +1,6 @@
+add_subdirectory(basic)
+add_subdirectory(nested)
+add_subdirectory(conjunction)
+add_subdirectory(disjunction)
+add_subdirectory(constexpr-like)
+add_subdirectory(bool-flag)
