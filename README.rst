@@ -28,6 +28,7 @@ Modern C++ Programming
 - `Casting <docs/notes/cpp/cpp_casting.rst>`_
 - `Constexpr <docs/notes/cpp/cpp_constexpr.rst>`_
 - `Lambda <docs/notes/cpp/cpp_lambda.rst>`_
+- `Requires <docs/notes/cpp/cpp_requires.rst>`_
 - `Time <docs/notes/cpp/cpp_time.rst>`_
 - `Smart Pointers <docs/notes/cpp/cpp_smartpointers.rst>`_
 - `Return Value Optimization <docs/notes/cpp/cpp_rvo.rst>`_
