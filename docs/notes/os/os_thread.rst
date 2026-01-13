@@ -3,8 +3,8 @@ Thread
 ======
 
 .. meta::
-   :description: POSIX threads (pthreads) tutorial in C with examples for thread creation, mutex locks, condition variables, read-write locks, thread-local storage, and Unix daemon programming.
-   :keywords: pthread tutorial, C threads, pthread_create, pthread_join, pthread_mutex, mutex lock, condition variable, pthread_cond_wait, pthread_cond_signal, read-write lock, pthread_rwlock, thread-local storage, thread synchronization, race condition, deadlock, producer consumer, C daemon, Unix daemon, setsid, POSIX threads, multithreading C
+   :description: POSIX threads (pthreads) and C++ concurrency tutorial with examples for thread creation, mutex locks, condition variables, read-write locks, thread-local storage, std::future, std::async, std::promise, and Unix daemon programming.
+   :keywords: pthread tutorial, C threads, pthread_create, pthread_join, pthread_mutex, mutex lock, condition variable, pthread_cond_wait, pthread_cond_signal, read-write lock, pthread_rwlock, thread-local storage, thread synchronization, race condition, deadlock, producer consumer, C daemon, Unix daemon, setsid, POSIX threads, multithreading C, std::future, std::async, std::promise, C++ concurrency, async programming
 
 .. contents:: Table of Contents
     :backlinks: none
@@ -295,6 +295,138 @@ overhead of mutex locking for thread-private data.
     $ gcc -pthread -o thread-local main.c && ./thread-local
     Thread 1: tls_var = 1
     Thread 2: tls_var = 2
+
+C++ Futures and Async
+---------------------
+
+:Source: `src/thread/future-basic <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/thread/future-basic>`_
+
+C++11 introduced ``std::future`` and ``std::async`` as higher-level abstractions
+for asynchronous programming. A future represents a value that will be available
+at some point, allowing you to launch computations and retrieve results later
+without manually managing threads. The ``get()`` method blocks until the result
+is ready, while ``wait_for()`` allows polling with a timeout to check if the
+computation has completed.
+
+Unlike raw threads where you must handle synchronization manually, futures
+automatically propagate exceptions from the async task to the calling thread
+when you call ``get()``. This makes error handling cleaner and prevents silent
+failures in concurrent code.
+
+.. code-block:: cpp
+
+    #include <future>
+    #include <thread>
+
+    int Compute(int x) { return x * x; }
+
+    int main() {
+      std::future<int> fut = std::async(std::launch::async, Compute, 5);
+      int result = fut.get();  // blocks until result ready, returns 25
+
+      // check if ready without blocking
+      std::future<int> fut2 = std::async(std::launch::async, [] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        return 42;
+      });
+      auto status = fut2.wait_for(std::chrono::milliseconds(100));
+      if (status == std::future_status::ready) {
+        int val = fut2.get();  // 42
+      }
+    }
+
+Launch Policies
+---------------
+
+:Source: `src/thread/future-async <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/thread/future-async>`_
+
+The ``std::async`` function accepts a launch policy that controls when and how
+the task executes. ``std::launch::async`` guarantees the task runs on a new
+thread immediately, while ``std::launch::deferred`` delays execution until
+``get()`` or ``wait()`` is called, running the task on the calling thread.
+The default policy (``async | deferred``) lets the implementation choose,
+which can lead to surprising behavior if you expect parallel execution.
+
+For CPU-bound parallel algorithms, use ``std::launch::async`` explicitly to
+ensure tasks run concurrently. Deferred execution is useful for lazy evaluation
+where the result might not be needed, avoiding the overhead of thread creation.
+
+.. code-block:: cpp
+
+    #include <future>
+    #include <numeric>
+    #include <vector>
+
+    int main() {
+      // async: runs immediately on new thread
+      auto fut1 = std::async(std::launch::async, [] { return 100; });
+
+      // deferred: runs lazily when get() called
+      auto fut2 = std::async(std::launch::deferred, [] { return 200; });
+
+      // parallel sum example
+      std::vector<int> v(1000);
+      std::iota(v.begin(), v.end(), 1);  // 1 to 1000
+
+      auto mid = v.begin() + v.size() / 2;
+      auto sum1 = std::async(std::launch::async, [&] {
+        return std::accumulate(v.begin(), mid, 0);
+      });
+      auto sum2 = std::async(std::launch::async, [&] {
+        return std::accumulate(mid, v.end(), 0);
+      });
+
+      int total = sum1.get() + sum2.get();  // 500500
+    }
+
+Promise and Future
+------------------
+
+:Source: `src/thread/future-promise <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/thread/future-promise>`_
+
+While ``std::async`` creates both the task and its associated future,
+``std::promise`` gives you explicit control over when and how a future is
+fulfilled. A promise is a write-end that you use to set a value or exception,
+while the future is the read-end that consumers use to retrieve the result.
+This separation is useful when the producer thread is created elsewhere or
+when you need to fulfill a future from a callback.
+
+Call ``set_value()`` to provide the result or ``set_exception()`` to signal
+an error. The associated future's ``get()`` will either return the value or
+rethrow the exception. Each promise can only be fulfilled once; attempting
+to set a value twice throws ``std::future_error``.
+
+.. code-block:: cpp
+
+    #include <future>
+    #include <thread>
+
+    int main() {
+      std::promise<int> prom;
+      std::future<int> fut = prom.get_future();
+
+      std::thread t([&prom] {
+        prom.set_value(42);  // fulfill the promise
+      });
+
+      int result = fut.get();  // blocks until value set, returns 42
+      t.join();
+
+      // exception propagation
+      std::promise<int> prom2;
+      std::future<int> fut2 = prom2.get_future();
+
+      std::thread t2([&prom2] {
+        prom2.set_exception(std::make_exception_ptr(std::runtime_error("error")));
+      });
+
+      try {
+        fut2.get();  // throws std::runtime_error
+      } catch (const std::runtime_error& e) {
+        // handle error
+      }
+      t2.join();
+    }
 
 Creating a Unix Daemon
 ----------------------
