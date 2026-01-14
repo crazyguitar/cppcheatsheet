@@ -1,0 +1,3 @@
+add_executable(ipc_unix_socket_test main.cc)
+target_link_libraries(ipc_unix_socket_test GTest::gtest_main)
+gtest_discover_tests(ipc_unix_socket_test)

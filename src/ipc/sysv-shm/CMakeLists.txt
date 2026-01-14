@@ -1,0 +1,3 @@
+add_executable(ipc_sysv_shm_test main.cc)
+target_link_libraries(ipc_sysv_shm_test GTest::gtest_main)
+gtest_discover_tests(ipc_sysv_shm_test)

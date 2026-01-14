@@ -24,3 +24,4 @@ is essential for developing robust network services and high-performance applica
    os_socket
    os_signal
    os_thread
+   os_ipc

@@ -44,6 +44,7 @@ System Programming
 - `Signal <docs/notes/os/os_signal.rst>`_
 - `Socket <docs/notes/os/os_socket.rst>`_
 - `Thread <docs/notes/os/os_thread.rst>`_
+- `IPC <docs/notes/os/os_ipc.rst>`_
 
 CUDA Programming
 ================

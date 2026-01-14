@@ -1,0 +1,3 @@
+add_executable(ipc_posix_semaphore_test main.cc)
+target_link_libraries(ipc_posix_semaphore_test GTest::gtest_main)
+gtest_discover_tests(ipc_posix_semaphore_test)

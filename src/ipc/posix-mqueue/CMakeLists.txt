@@ -1,0 +1,5 @@
+if(NOT APPLE)
+  add_executable(ipc_posix_mqueue_test main.cc)
+  target_link_libraries(ipc_posix_mqueue_test GTest::gtest_main rt)
+  gtest_discover_tests(ipc_posix_mqueue_test)
+endif()

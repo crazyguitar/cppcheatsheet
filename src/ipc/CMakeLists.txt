@@ -1,0 +1,7 @@
+add_subdirectory(pipe)
+add_subdirectory(fifo)
+add_subdirectory(posix-shm)
+add_subdirectory(posix-mqueue)
+add_subdirectory(posix-semaphore)
+add_subdirectory(unix-socket)
+add_subdirectory(sysv-shm)
