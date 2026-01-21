@@ -38,8 +38,16 @@ extensions = [
     'sphinx.ext.graphviz',
     'sphinx_design',
     'sphinx.ext.extlinks',
-    'sphinx_sitemap'
+    'sphinx_sitemap',
+    'sphinxext.opengraph',
 ]
+
+# -- Open Graph configuration ---------------------------------------------
+ogp_site_url = "https://cppcheatsheet.com/"
+ogp_site_name = "C++ Cheatsheet"
+ogp_image = "https://cppcheatsheet.com/_static/logo.png"
+ogp_description_length = 200
+ogp_type = "website"
 
 myst_enable_extensions = [
     "colon_fence",
