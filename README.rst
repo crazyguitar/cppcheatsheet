@@ -35,6 +35,7 @@ Modern C++ Programming
 - `Return Value Optimization <docs/notes/cpp/cpp_rvo.rst>`_
 - `Algorithm <docs/notes/cpp/cpp_algorithm.rst>`_
 - `Coroutine <docs/notes/cpp/cpp_coroutine.rst>`_
+- `Modules <docs/notes/cpp/cpp_modules.rst>`_
 - `CMake <docs/notes/cpp/cpp_cmake.rst>`_
 
 System Programming

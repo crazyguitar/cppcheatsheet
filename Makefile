@@ -39,7 +39,7 @@ ifeq ($(PY36), 1)
 endif
 
 format:
-	find . -type f -name "*.cc" -o -name "*.h" -o -name "*.cu" -o -name "*.cuh" | xargs -I{} clang-format -style=file -i {}
+	find . -type f -name "*.cc" -o -name "*.h" -o -name "*.cu" -o -name "*.cuh" -o -name "*.cppm" -o -name "*.cpp" | xargs -I{} clang-format -style=file -i {}
 
 clean:
 	rm -rf build

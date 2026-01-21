@@ -35,5 +35,6 @@ manipulation using STL containers and algorithms.
    cpp_rvo
    cpp_algorithm
    cpp_coroutine
+   cpp_modules
    cpp_time
    cpp_cmake
