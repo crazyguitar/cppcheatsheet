@@ -1,5 +1,6 @@
 add_subdirectory(basic)
 add_subdirectory(casting)
+add_subdirectory(concepts)
 add_subdirectory(constexpr)
 add_subdirectory(lambda)
 add_subdirectory(raii)
