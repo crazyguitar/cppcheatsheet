@@ -10,6 +10,9 @@ This cheatsheet provides a curated collection of C and C++ code snippets coverin
 Modern C Programming
 ====================
 
+Core C language features from C11 to C23, including memory management, preprocessor
+macros, GNU extensions, and build systems.
+
 - `C Basics <docs/notes/c/c_basic.rst>`_
 - `Memory <docs/notes/c/c_memory.rst>`_
 - `Preprocessor & GNU Extensions <docs/notes/c/c_macro.rst>`_
@@ -18,6 +21,11 @@ Modern C Programming
 
 Modern C++ Programming
 ======================
+
+Modern C++ features from C++11 to C++23. Covers resource management with RAII and
+smart pointers, generic programming with templates and concepts, functional patterns
+with lambdas, compile-time computation with constexpr, and asynchronous programming
+with coroutines.
 
 - `C++ Basics <docs/notes/cpp/cpp_basic.rst>`_
 - `Resource Management <docs/notes/cpp/cpp_raii.rst>`_
@@ -41,6 +49,9 @@ Modern C++ Programming
 System Programming
 ==================
 
+POSIX system programming covering process management, file I/O, signals, network
+sockets, threading, and inter-process communication.
+
 - `Process <docs/notes/os/os_process.rst>`_
 - `File <docs/notes/os/os_file.rst>`_
 - `Signal <docs/notes/os/os_signal.rst>`_
@@ -50,6 +61,9 @@ System Programming
 
 CUDA Programming
 ================
+
+GPU programming with NVIDIA CUDA. Covers kernel basics, memory hierarchy, cooperative
+groups, memory visibility, asynchronous pipelines, and multi-GPU communication.
 
 - `CUDA Basics <docs/notes/cuda/cuda_basics.rst>`_
 - `CUDA C++ (libcu++) <docs/notes/cuda/cuda_cpp.rst>`_
@@ -62,6 +76,9 @@ CUDA Programming
 Bash & System Tools
 ===================
 
+Command-line tools and shell scripting for system administration, networking,
+and hardware inspection.
+
 - `Bash <docs/notes/tools/bash.rst>`_
 - `Operating System <docs/notes/tools/os.rst>`_
 - `Network <docs/notes/tools/net.rst>`_
@@ -72,6 +89,9 @@ Bash & System Tools
 Debugging & Profiling
 =====================
 
+Tools for debugging, memory analysis, and performance profiling of C/C++ and
+CUDA applications.
+
 - `GDB <docs/notes/debug/gdb.rst>`_
 - `Valgrind <docs/notes/debug/valgrind.rst>`_
 - `Sanitizers <docs/notes/debug/sanitizers.rst>`_
@@ -81,5 +101,7 @@ Debugging & Profiling
 
 Appendix
 ========
+
+Supplementary materials for learning related languages and tools.
 
 - `Rust for C++ Developers <docs/notes/appendix/rust_from_cpp.rst>`_
