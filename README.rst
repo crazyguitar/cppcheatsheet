@@ -46,6 +46,27 @@ with coroutines.
 - `Modules <docs/notes/cpp/cpp_modules.rst>`_
 - `CMake <docs/notes/cpp/cpp_cmake.rst>`_
 
+Rust for C++ Developers
+=======================
+
+Rust programming guide for C++ developers. Maps C++ concepts to Rust equivalents
+with side-by-side code comparisons covering ownership, traits, error handling,
+smart pointers, and concurrency.
+
+- `Basics <docs/notes/rust/rust_basic.rst>`_
+- `RAII & Drop <docs/notes/rust/rust_raii.rst>`_
+- `Strings <docs/notes/rust/rust_string.rst>`_
+- `Collections <docs/notes/rust/rust_container.rst>`_
+- `Iterators <docs/notes/rust/rust_iterator.rst>`_
+- `Traits & Generics <docs/notes/rust/rust_traits.rst>`_
+- `Casting <docs/notes/rust/rust_casting.rst>`_
+- `Const Functions <docs/notes/rust/rust_constfn.rst>`_
+- `Closures <docs/notes/rust/rust_closure.rst>`_
+- `Smart Pointers <docs/notes/rust/rust_smartptr.rst>`_
+- `Error Handling <docs/notes/rust/rust_error.rst>`_
+- `Threads <docs/notes/rust/rust_thread.rst>`_
+- `Modules <docs/notes/rust/rust_modules.rst>`_
+
 System Programming
 ==================
 

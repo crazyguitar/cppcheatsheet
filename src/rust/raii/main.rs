@@ -5,7 +5,9 @@ struct Resource {
 impl Resource {
     fn new(name: &str) -> Self {
         println!("Resource '{}' acquired", name);
-        Resource { name: name.to_string() }
+        Resource {
+            name: name.to_string(),
+        }
     }
 }
 
