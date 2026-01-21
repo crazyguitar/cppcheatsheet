@@ -4,7 +4,7 @@ VER  = $(word 2, $(shell python3 --version 2>&1))
 SRC  = app.py app_test.py
 PY36 = $(shell expr $(VER) \>= 3.6)
 
-.PHONY: all docs deps pytest build test format clean
+.PHONY: all docs deps pytest build test format clean rust-test
 
 all: build test
 
@@ -19,6 +19,11 @@ cuda:
 
 test: build
 	cd build && ctest --output-on-failure
+
+rust-test:
+	cd src/rust && cargo test
+
+test-all: test rust-test
 
 test-cuda: cuda
 	cd build && ctest --output-on-failure
@@ -40,6 +45,7 @@ endif
 
 format:
 	find . -type f -name "*.cc" -o -name "*.h" -o -name "*.cu" -o -name "*.cuh" -o -name "*.cppm" -o -name "*.cpp" | xargs -I{} clang-format -style=file -i {}
+	cd src/rust && cargo fmt
 
 clean:
 	rm -rf build

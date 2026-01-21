@@ -19,3 +19,4 @@ Whether you're refreshing your memory on pointer arithmetic, exploring modern C+
    notes/cuda/index
    notes/tools/index
    notes/debug/index
+   notes/appendix/index

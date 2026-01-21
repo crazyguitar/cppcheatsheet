@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "hello",
+    "variables",
+    "borrowing",
+    "ownership",
+    "structs",
+    "self_this",
+    "raii",
+    "strings",
+    "casting",
+    "const_fn",
+    "enums",
+    "error_handling",
+    "generics",
+    "iterators",
+    "smart_pointers",
+    "threads",
+    "closures",
+    "collections",
+    "modules",
+]

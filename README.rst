@@ -78,3 +78,8 @@ Debugging & Profiling
 - `Tracing <docs/notes/debug/tracing.rst>`_
 - `Perf <docs/notes/debug/perf.rst>`_
 - `Nsight Systems <docs/notes/debug/nsight.rst>`_
+
+Appendix
+========
+
+- `Rust for C++ Developers <docs/notes/appendix/rust_from_cpp.rst>`_

@@ -11,10 +11,21 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake ninja-build g++-14
-    - name: Build and Test
-      run: make
+    - name: Build and Test C++
+      run: |
+        ./build.sh
+        cd build && ctest --output-on-failure
       env:
         CXX: g++-14
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+    - name: Test Rust
+      run: make rust-test
 
   python:
     runs-on: ubuntu-latest
