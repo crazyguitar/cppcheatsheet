@@ -31,3 +31,4 @@ working examples.
    rust_error
    rust_thread
    rust_modules
+   rust_ffi

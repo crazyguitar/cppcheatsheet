@@ -20,4 +20,5 @@ members = [
     "closures",
     "collections",
     "modules",
+    "ffi",
 ]
