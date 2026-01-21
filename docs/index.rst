@@ -12,7 +12,6 @@ Whether you're refreshing your memory on pointer arithmetic, exploring modern C+
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents
 
    notes/c/index
    notes/cpp/index
