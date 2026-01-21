@@ -52,6 +52,7 @@ CUDA Programming
 
 - `CUDA Basics <docs/notes/cuda/cuda_basics.rst>`_
 - `CUDA C++ (libcu++) <docs/notes/cuda/cuda_cpp.rst>`_
+- `Thrust <docs/notes/cuda/cuda_thrust.rst>`_
 - `Cooperative Groups <docs/notes/cuda/cuda_coop_groups.rst>`_
 - `Memory Visibility <docs/notes/cuda/cuda_memory_visibility.rst>`_
 - `Pipelines <docs/notes/cuda/cuda_pipelines.rst>`_

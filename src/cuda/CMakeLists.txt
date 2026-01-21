@@ -111,4 +111,25 @@ if(ENABLE_CUDA)
   add_executable(cuda-libcuxx-latch libcuxx-latch/main.cu)
   target_link_libraries(cuda-libcuxx-latch GTest::gtest_main)
   gtest_discover_tests(cuda-libcuxx-latch)
+
+  # Thrust examples
+  add_executable(cuda-thrust-basics thrust-basics/main.cu)
+  target_link_libraries(cuda-thrust-basics GTest::gtest_main)
+  gtest_discover_tests(cuda-thrust-basics)
+
+  add_executable(cuda-thrust-transform thrust-transform/main.cu)
+  target_link_libraries(cuda-thrust-transform GTest::gtest_main)
+  gtest_discover_tests(cuda-thrust-transform)
+
+  add_executable(cuda-thrust-reduce thrust-reduce/main.cu)
+  target_link_libraries(cuda-thrust-reduce GTest::gtest_main)
+  gtest_discover_tests(cuda-thrust-reduce)
+
+  add_executable(cuda-thrust-sort thrust-sort/main.cu)
+  target_link_libraries(cuda-thrust-sort GTest::gtest_main)
+  gtest_discover_tests(cuda-thrust-sort)
+
+  add_executable(cuda-thrust-custom thrust-custom/main.cu)
+  target_link_libraries(cuda-thrust-custom GTest::gtest_main)
+  gtest_discover_tests(cuda-thrust-custom)
 endif()
