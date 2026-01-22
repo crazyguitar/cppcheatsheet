@@ -11,12 +11,21 @@ Closures
 
 :Source: `src/rust/closures <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/closures>`_
 
-Rust closures are anonymous functions that can capture variables from their
-environment. They're similar to C++ lambdas but with automatic capture mode
-inference.
+Rust closures are anonymous functions that can capture variables from their enclosing
+scope. They're similar to C++ lambdas but with a key difference: Rust automatically
+infers how to capture each variable (by reference, mutable reference, or by value)
+based on how the closure uses it. This eliminates the need for explicit capture lists
+like ``[&]`` or ``[=]`` in C++. Closures in Rust also implement one or more of the
+``Fn``, ``FnMut``, or ``FnOnce`` traits, which determines how they can be called.
 
 Basic Syntax
 ------------
+
+Rust closures use vertical bars ``|args|`` instead of parentheses for parameters, and
+the body can be a single expression or a block. Type annotations are optional - Rust
+infers types from how the closure is used. Unlike C++ where you must explicitly specify
+capture mode, Rust analyzes the closure body and captures each variable in the least
+restrictive way possible:
 
 **C++:**
 
@@ -54,6 +63,13 @@ Basic Syntax
 Capture Modes
 -------------
 
+C++ requires explicit capture specifications (``[=]``, ``[&]``, ``[x]``, ``[&x]``),
+which can be error-prone - capturing by reference when you meant by value can cause
+dangling references. Rust infers the capture mode automatically: if the closure only
+reads a variable, it captures by immutable reference; if it modifies the variable, it
+captures by mutable reference; if it moves the variable (e.g., returns it or passes
+it to a function taking ownership), it captures by value:
+
 **C++ explicit captures:**
 
 .. code-block:: cpp
@@ -83,6 +99,12 @@ Capture Modes
 Move Closures
 ~~~~~~~~~~~~~
 
+The ``move`` keyword forces a closure to take ownership of all captured variables,
+even if the closure body would only require borrowing. This is essential when the
+closure needs to outlive the current scope, such as when spawning threads or returning
+closures from functions. For ``Copy`` types like integers, ``move`` creates a copy;
+for non-``Copy`` types like ``String``, it transfers ownership:
+
 .. code-block:: rust
 
     fn main() {
@@ -105,7 +127,11 @@ Move Closures
 Fn Traits
 ---------
 
-Rust closures implement one or more of three traits:
+Rust closures implement one or more of three traits based on how they use captured
+variables. ``FnOnce`` is the most general - all closures implement it. ``FnMut`` is
+for closures that don't consume captured values but may mutate them. ``Fn`` is for
+closures that only read captured values. When accepting closures as parameters, use
+the most general trait that works (``FnOnce`` > ``FnMut`` > ``Fn``) to maximize flexibility:
 
 +-------------+------------------+----------------------------------+
 | Trait       | Receiver         | Can be called                    |
@@ -133,6 +159,12 @@ Rust closures implement one or more of three traits:
 
 Closures as Parameters
 ----------------------
+
+Functions can accept closures as parameters using generics with trait bounds or trait
+objects. The generic approach (monomorphization) generates specialized code for each
+closure type, giving the best performance. The trait object approach (``dyn Fn``)
+uses dynamic dispatch, which has a small runtime cost but allows storing different
+closure types in the same collection:
 
 **C++:**
 
@@ -180,6 +212,11 @@ Closures as Parameters
 Returning Closures
 ------------------
 
+Returning closures from functions requires either ``impl Trait`` syntax (when returning
+a single closure type) or ``Box<dyn Fn>`` (when the closure type might vary). The
+``move`` keyword is usually necessary because the closure needs to own its captured
+variables - otherwise they would be dropped when the function returns:
+
 **C++:**
 
 .. code-block:: cpp
@@ -210,7 +247,11 @@ Returning Closures
 Closure Type Inference
 ----------------------
 
-Rust infers closure parameter and return types from usage:
+Rust infers closure parameter and return types from how the closure is used. This
+means you usually don't need type annotations, but it also means each closure has
+a unique anonymous type - you can't have two closures with the same signature stored
+in the same variable without using trait objects. Once a closure's types are inferred
+from its first use, they're fixed:
 
 .. code-block:: rust
 
@@ -228,6 +269,12 @@ Rust infers closure parameter and return types from usage:
 
 Closures with Iterators
 -----------------------
+
+Closures are most commonly used with iterator adapters like ``map``, ``filter``, and
+``fold``. These methods take closures that transform or filter elements. The closure
+syntax is concise enough that complex transformations remain readable. Iterator
+adapters are lazy - they don't execute until you consume the iterator with ``collect``,
+``for_each``, or similar methods:
 
 .. code-block:: rust
 

@@ -11,11 +11,20 @@ Smart Pointers
 
 :Source: `src/rust/smart_pointers <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/smart_pointers>`_
 
-Rust smart pointers provide different ownership and borrowing patterns. Unlike C++,
-Rust's ownership system prevents most pointer-related bugs at compile time.
+Rust smart pointers provide different ownership and borrowing patterns beyond what
+basic references offer. Unlike C++ where smart pointers are library types that can
+be misused (e.g., creating cycles with ``shared_ptr``), Rust's ownership system
+prevents most pointer-related bugs at compile time. Smart pointers in Rust implement
+the ``Deref`` trait, allowing them to be used like regular references, and the ``Drop``
+trait for automatic cleanup.
 
 Smart Pointer Comparison
 ------------------------
+
+The following table maps C++ smart pointers to their Rust equivalents. Note that Rust
+splits C++'s ``shared_ptr`` into two types: ``Rc`` for single-threaded code (faster,
+no atomic operations) and ``Arc`` for multi-threaded code (thread-safe with atomic
+reference counting):
 
 +------------------------+------------------------+
 | C++                    | Rust                   |
@@ -34,7 +43,12 @@ Smart Pointer Comparison
 Box (Unique Ownership)
 ----------------------
 
-``Box<T>`` is like ``std::unique_ptr<T>`` - single owner, heap allocated.
+``Box<T>`` provides heap allocation with single ownership, similar to ``std::unique_ptr<T>``.
+When a ``Box`` goes out of scope, it automatically frees the heap memory. Unlike C++
+where you might accidentally copy a ``unique_ptr`` (which is a compile error but easy
+to attempt), Rust's move semantics make ownership transfer explicit and safe. ``Box``
+is commonly used for recursive data structures, large data that shouldn't be copied,
+and trait objects.
 
 **C++:**
 
@@ -61,11 +75,18 @@ Box (Unique Ownership)
 
         // Transfer ownership
         let boxed2 = boxed;
-        // boxed is no longer valid
+        // boxed is no longer valid - compile error if used
     }
 
 Use Cases for Box
 ~~~~~~~~~~~~~~~~~
+
+``Box`` is essential in several scenarios where stack allocation isn't possible or
+desirable. Recursive types like linked lists and trees require ``Box`` because the
+compiler needs to know the size of types at compile time - without indirection, a
+recursive type would have infinite size. Large data benefits from ``Box`` to avoid
+expensive stack copies. Trait objects require ``Box`` (or another pointer type)
+because different implementations may have different sizes:
 
 .. code-block:: rust
 
@@ -84,7 +105,12 @@ Use Cases for Box
 Rc (Reference Counting)
 -----------------------
 
-``Rc<T>`` is like ``std::shared_ptr<T>`` but single-threaded only.
+``Rc<T>`` (Reference Counted) enables shared ownership where multiple parts of your
+code need to read the same data. It's similar to ``std::shared_ptr<T>`` but is
+explicitly single-threaded - attempting to send an ``Rc`` to another thread is a
+compile error. This restriction allows ``Rc`` to use non-atomic reference counting,
+making it faster than ``Arc`` when thread safety isn't needed. The reference count
+is incremented when you clone an ``Rc`` and decremented when an ``Rc`` is dropped.
 
 **C++:**
 
@@ -115,8 +141,12 @@ Rc (Reference Counting)
 Rc with RefCell (Interior Mutability)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``Rc<T>`` only allows shared (immutable) access. Use ``RefCell<T>`` for
-runtime-checked mutable access:
+``Rc<T>`` only provides shared (immutable) access to its contents - you cannot get
+a mutable reference through an ``Rc``. When you need shared ownership with mutation,
+combine ``Rc`` with ``RefCell``. ``RefCell`` moves Rust's borrow checking from compile
+time to runtime: it tracks borrows dynamically and will panic if you violate the
+borrowing rules (e.g., two simultaneous mutable borrows). This pattern is common for
+graph structures, observer patterns, and caches:
 
 .. code-block:: rust
 
@@ -138,7 +168,12 @@ runtime-checked mutable access:
 Arc (Atomic Reference Counting)
 -------------------------------
 
-``Arc<T>`` is thread-safe ``Rc<T>``, like ``std::shared_ptr<T>`` with atomic ops.
+``Arc<T>`` (Atomically Reference Counted) is the thread-safe version of ``Rc<T>``.
+It uses atomic operations for reference counting, making it safe to share across
+threads. This is equivalent to ``std::shared_ptr<T>`` in C++, which also uses atomic
+reference counting. The atomic operations add some overhead compared to ``Rc``, so
+prefer ``Rc`` when you don't need thread safety. ``Arc`` is commonly used with
+``Mutex`` or ``RwLock`` to provide thread-safe shared mutable state.
 
 **C++:**
 
@@ -177,7 +212,11 @@ Arc (Atomic Reference Counting)
 Arc with Mutex
 ~~~~~~~~~~~~~~
 
-For thread-safe mutable access:
+For thread-safe mutable access, combine ``Arc`` with ``Mutex``. The ``Mutex`` ensures
+only one thread can access the data at a time, while ``Arc`` allows multiple threads
+to hold references to the mutex. This pattern is the Rust equivalent of sharing a
+``std::shared_ptr<std::mutex<T>>`` in C++, but Rust's type system ensures you can't
+forget to lock the mutex - the data is only accessible through the lock guard:
 
 .. code-block:: rust
 
@@ -207,7 +246,12 @@ For thread-safe mutable access:
 RefCell (Interior Mutability)
 -----------------------------
 
-``RefCell<T>`` allows mutable borrows checked at runtime instead of compile time:
+``RefCell<T>`` provides interior mutability - the ability to mutate data even when
+there are immutable references to it. This is checked at runtime rather than compile
+time: ``RefCell`` tracks active borrows and panics if you violate the borrowing rules.
+Use ``RefCell`` when you know your code follows borrowing rules but the compiler can't
+verify it, such as in graph structures or mock objects for testing. The runtime checks
+have a small performance cost, so prefer compile-time borrowing when possible:
 
 .. code-block:: rust
 
@@ -232,7 +276,10 @@ RefCell (Interior Mutability)
 Cell (Copy Types)
 ~~~~~~~~~~~~~~~~~
 
-For ``Copy`` types, ``Cell<T>`` is simpler:
+For types that implement ``Copy`` (like integers and floats), ``Cell<T>`` provides
+a simpler alternative to ``RefCell``. Instead of borrowing, ``Cell`` copies values
+in and out. This avoids the runtime borrow tracking overhead and can never panic,
+but only works with ``Copy`` types since it needs to copy the entire value:
 
 .. code-block:: rust
 
@@ -248,7 +295,11 @@ For ``Copy`` types, ``Cell<T>`` is simpler:
 Weak References
 ---------------
 
-Prevent reference cycles with ``Weak<T>``:
+``Weak<T>`` prevents reference cycles that would cause memory leaks. A ``Weak``
+reference doesn't contribute to the reference count, so it won't keep the data alive.
+Before using a ``Weak``, you must upgrade it to an ``Rc`` or ``Arc``, which returns
+``None`` if the data has been dropped. This is essential for parent-child relationships
+where children need to reference their parent without creating a cycle:
 
 **C++:**
 
@@ -291,7 +342,11 @@ Prevent reference cycles with ``Weak<T>``:
 Cow (Clone on Write)
 --------------------
 
-``Cow<T>`` delays cloning until mutation is needed:
+``Cow<T>`` (Clone on Write) is a smart pointer that can hold either borrowed or owned
+data. It delays cloning until mutation is actually needed, which can significantly
+improve performance when you often don't need to modify the data. This is useful for
+functions that might need to modify their input but usually don't, or for caching
+scenarios where you want to avoid unnecessary allocations:
 
 .. code-block:: rust
 
@@ -315,5 +370,5 @@ Cow (Clone on Write)
 See Also
 --------
 
-- :doc:`rust_basic` - Ownership fundamentals
+- :doc:`rust_ownership` - Ownership fundamentals
 - :doc:`rust_thread` - Arc and Mutex with threads
