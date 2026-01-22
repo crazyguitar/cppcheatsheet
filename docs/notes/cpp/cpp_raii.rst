@@ -3,8 +3,8 @@ Resource Management
 ===================
 
 .. meta::
-   :description: C++ RAII pattern guide for resource management, covering constructors, destructors, and exception-safe code.
-   :keywords: C++, RAII, resource management, constructor, destructor, exception safety, scope guard
+   :description: C++ RAII and move semantics guide covering Rule of Zero/Three/Five, value categories, perfect forwarding, noexcept, and common pitfalls with examples.
+   :keywords: C++, RAII, move semantics, std::move, std::forward, Rule of Five, Rule of Three, value categories, rvalue, lvalue, perfect forwarding, noexcept, move constructor, move assignment, resource management
 
 .. contents:: Table of Contents
     :backlinks: none
@@ -15,10 +15,10 @@ acquires resources; when it is destroyed, it releases them. This pattern elimina
 resource leaks and ensures exception safety by leveraging C++'s deterministic
 destruction guarantees.
 
-Note that `Rust <https://www.rust-lang.org/>`_ enforces ownership at compile time, offering strong safety guarantees. 
-Interestingly, Rust's ownership model closely resembles C++'s RAII and move semantics 
-(available since C++11). For example, Rust's ownership transfer is analogous to 
-``std::move``, and its ``Drop`` trait mirrors C++ destructors. This section explores 
+Note that `Rust <https://www.rust-lang.org/>`_ enforces ownership at compile time, offering strong safety guarantees.
+Interestingly, Rust's ownership model closely resembles C++'s RAII and move semantics
+(available since C++11). For example, Rust's ownership transfer is analogous to
+``std::move``, and its ``Drop`` trait mirrors C++ destructors. This section explores
 these resource management techniques in depth.
 
 
@@ -404,6 +404,635 @@ self-assignment automatically:
       std::swap(handle_, other.handle_);
       return *this;
       // other's destructor will close our old handle
+    }
+
+Value Categories
+----------------
+
+:Source: `src/raii/value-categories <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/value-categories>`_
+
+Understanding value categories is essential for mastering move semantics. C++11
+introduced a refined taxonomy that determines when move operations are invoked
+versus copy operations. Every expression in C++ has both a type and a value
+category. The value category determines whether the expression can be moved from,
+whether it has identity (can take its address), and which overloaded function
+will be selected during overload resolution. This classification is fundamental
+to understanding why ``std::move`` works and when move constructors are called.
+
+**The five value categories:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 20 65
+
+   * - Category
+     - Has Identity
+     - Description
+   * - lvalue
+     - Yes
+     - Has a name or address; can appear on left side of assignment
+   * - xvalue
+     - Yes
+     - "eXpiring value"; about to be moved from (e.g., ``std::move(x)``)
+   * - prvalue
+     - No
+     - "Pure rvalue"; temporary with no name (e.g., ``42``, ``Foo()``)
+   * - glvalue
+     - Yes
+     - Generalized lvalue (lvalue or xvalue)
+   * - rvalue
+     - -
+     - Can be moved from (xvalue or prvalue)
+
+**What std::move actually does:**
+
+``std::move`` is an unconditional cast to rvalue reference—it does not move
+anything by itself. The actual move happens when a move constructor or assignment
+is invoked. See `Common Move Semantics Pitfalls`_ for details and examples.
+
+Move-Only Types
+---------------
+
+:Source: `src/raii/move-only <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/move-only>`_
+
+Some types represent unique ownership of a resource and should never be copied—only
+moved. Examples include ``std::unique_ptr``, ``std::thread``, ``std::fstream``, and
+custom file handles. These types enforce exclusive ownership semantics: at any point
+in time, exactly one object owns the resource. Copying would violate this invariant
+by creating two owners, leading to double-free bugs or resource conflicts. Implement
+move-only types by explicitly deleting copy operations while providing move operations:
+
+.. code-block:: cpp
+
+    #include <cstdio>
+    #include <utility>
+
+    class UniqueFile {
+     public:
+      explicit UniqueFile(const char *path)
+          : handle_(std::fopen(path, "w")) {}
+
+      ~UniqueFile() {
+        if (handle_) std::fclose(handle_);
+      }
+
+      // Delete copy operations
+      UniqueFile(const UniqueFile &) = delete;
+      UniqueFile &operator=(const UniqueFile &) = delete;
+
+      // Provide move operations
+      UniqueFile(UniqueFile &&other) noexcept
+          : handle_(std::exchange(other.handle_, nullptr)) {}
+
+      UniqueFile &operator=(UniqueFile &&other) noexcept {
+        if (this != &other) {
+          if (handle_) std::fclose(handle_);
+          handle_ = std::exchange(other.handle_, nullptr);
+        }
+        return *this;
+      }
+
+      std::FILE *get() const { return handle_; }
+
+     private:
+      std::FILE *handle_ = nullptr;
+    };
+
+    int main() {
+      UniqueFile f1("/tmp/test.txt");
+      // UniqueFile f2 = f1;           // Error: copy deleted
+      UniqueFile f2 = std::move(f1);   // OK: move
+    }
+
+Perfect Forwarding
+------------------
+
+:Source: `src/raii/forwarding <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/forwarding>`_
+
+Perfect forwarding preserves the value category (lvalue or rvalue) of arguments
+when passing them through template functions. Without perfect forwarding, a named
+parameter inside a function is always an lvalue (because it has a name), even if
+the original argument was an rvalue. This causes unnecessary copies when the
+forwarded argument should have been moved. Perfect forwarding is essential for
+implementing generic wrapper functions, factory functions like ``std::make_unique``,
+and decorator patterns that need to forward arguments to other functions without
+losing efficiency or changing semantics.
+
+**Universal references (forwarding references):**
+
+In template contexts, ``T&&`` is a *universal reference* (also called *forwarding
+reference* in C++17 terminology), not an rvalue reference. This special deduction
+rule only applies when ``T`` is a deduced template parameter. Universal references
+bind to both lvalues and rvalues through reference collapsing rules, making them
+the foundation of perfect forwarding:
+
+.. code-block:: cpp
+
+    template <typename T>
+    void wrapper(T&& arg);  // Universal reference, not rvalue reference
+
+    int x = 42;
+    wrapper(x);              // T deduced as int&, T&& becomes int& (lvalue)
+    wrapper(42);             // T deduced as int, T&& becomes int&& (rvalue)
+
+**Reference collapsing rules:**
+
+When references to references are formed (through template instantiation or
+typedef), they collapse according to these rules. The key insight is that any
+reference involving an lvalue reference collapses to an lvalue reference:
+
+.. code-block:: text
+
+    T& &   → T&
+    T& &&  → T&
+    T&& &  → T&
+    T&& && → T&&
+
+**Using std::forward:**
+
+``std::forward<T>`` is a conditional cast: it casts to rvalue reference only if
+``T`` is not an lvalue reference type. This preserves the original value category
+of the argument through the forwarding chain. Unlike ``std::move`` which always
+casts to rvalue, ``std::forward`` examines the template parameter to decide:
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <utility>
+
+    void process(int &x) { std::cout << "lvalue: " << x << "\n"; }
+    void process(int &&x) { std::cout << "rvalue: " << x << "\n"; }
+
+    template <typename T>
+    void wrapper(T &&arg) {
+      process(std::forward<T>(arg));  // Preserves value category
+    }
+
+    int main() {
+      int x = 42;
+      wrapper(x);        // Calls process(int&)
+      wrapper(123);      // Calls process(int&&)
+    }
+
+**Factory pattern with perfect forwarding:**
+
+.. code-block:: cpp
+
+    #include <memory>
+    #include <utility>
+
+    template <typename T, typename... Args>
+    std::unique_ptr<T> make_unique(Args&&... args) {
+      return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+
+    struct Widget {
+      Widget(int x, double y) : x_(x), y_(y) {}
+      int x_;
+      double y_;
+    };
+
+    int main() {
+      auto w = make_unique<Widget>(42, 3.14);  // Perfect forwarding
+    }
+
+For more details on value categories and forwarding, see the C++ standard
+documentation on expression categories.
+
+Conditional noexcept
+--------------------
+
+:Source: `src/raii/conditional-noexcept <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/conditional-noexcept>`_
+
+Move operations should be ``noexcept`` whenever possible. This is critical for
+performance because the standard library containers make optimization decisions
+based on the ``noexcept`` specification. Specifically, ``std::vector`` uses move
+operations during reallocation only if they are ``noexcept``; otherwise, it falls
+back to copying for exception safety. The reason is that if a move operation throws
+mid-reallocation, the vector would be left in an inconsistent state with some
+elements moved and others not. By requiring ``noexcept``, the vector can safely
+use moves knowing they won't throw.
+
+**Why noexcept matters:**
+
+.. code-block:: cpp
+
+    #include <vector>
+
+    struct Widget {
+      Widget(Widget &&) noexcept { /* ... */ }  // std::vector will move
+    };
+
+    struct Gadget {
+      Gadget(Gadget &&) { /* ... */ }  // std::vector will copy (not noexcept)
+    };
+
+**Conditional noexcept:**
+
+When a class contains members, the move operation's exception specification should
+depend on the members' move operations. A wrapper class should be ``noexcept`` if
+and only if its contained type's move is ``noexcept``. Use ``noexcept(noexcept(...))``
+or type traits to conditionally propagate exception specifications. This ensures
+that your wrapper types work efficiently with standard containers when possible:
+
+.. code-block:: cpp
+
+    #include <type_traits>
+    #include <utility>
+
+    template <typename T>
+    class Wrapper {
+     public:
+      Wrapper(Wrapper &&other) noexcept(std::is_nothrow_move_constructible_v<T>)
+          : data_(std::move(other.data_)) {}
+
+     private:
+      T data_;
+    };
+
+**Checking move operation properties:**
+
+The ``<type_traits>`` header provides compile-time checks for move operation
+properties. Use these to verify your types meet the requirements for efficient
+container operations:
+
+.. code-block:: cpp
+
+    #include <string>
+    #include <type_traits>
+
+    static_assert(std::is_nothrow_move_constructible_v<std::string>);
+    static_assert(std::is_nothrow_move_assignable_v<std::string>);
+
+Self-Move Assignment
+--------------------
+
+:Source: `src/raii/self-move <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/self-move>`_
+
+Self-move assignment (``x = std::move(x)``) is rare in practice but can occur
+through aliasing, particularly when working with pointers or references. While
+the standard library guarantees that self-move leaves objects in a valid but
+unspecified state, user-defined types must explicitly handle this case to avoid
+undefined behavior. A naive implementation that deletes resources before checking
+for self-assignment will corrupt the object.
+
+**Problematic implementation:**
+
+.. code-block:: cpp
+
+    class Buffer {
+     public:
+      Buffer &operator=(Buffer &&other) noexcept {
+        delete[] data_;
+        data_ = std::exchange(other.data_, nullptr);  // Bug if this == &other
+        return *this;
+      }
+     private:
+      char *data_;
+    };
+
+    Buffer b;
+    b = std::move(b);  // Undefined behavior: data_ deleted then set to nullptr
+
+**Correct implementations:**
+
+**Option 1: Explicit self-check:**
+
+The straightforward approach adds a self-assignment check before modifying state:
+
+.. code-block:: cpp
+
+    Buffer &operator=(Buffer &&other) noexcept {
+      if (this != &other) {
+        delete[] data_;
+        data_ = std::exchange(other.data_, nullptr);
+      }
+      return *this;
+    }
+
+**Option 2: Swap-based (handles self-move automatically):**
+
+The swap idiom handles self-move naturally because swapping an object with itself
+is a no-op. This approach is also exception-safe and often results in cleaner code:
+
+.. code-block:: cpp
+
+    Buffer &operator=(Buffer &&other) noexcept {
+      std::swap(data_, other.data_);
+      return *this;
+      // other's destructor cleans up our old data
+    }
+
+The swap-based approach is preferred because it handles self-move naturally
+without explicit checks and is exception-safe.
+
+Moved-From State
+----------------
+
+:Source: `src/raii/moved-from-state <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/moved-from-state>`_
+
+After an object is moved from, it must remain in a *valid but unspecified state*.
+This is a crucial invariant that allows moved-from objects to be safely destroyed
+or reassigned. The "valid" part means the object's class invariants are maintained
+enough for the destructor to run correctly. The "unspecified" part means you cannot
+rely on any particular value—the object might be empty, might retain its old value,
+or might be in some other consistent state. This guarantee applies to standard
+library types and should be maintained by user-defined types.
+
+**What operations are valid on moved-from objects:**
+
+1. The object's destructor can be safely called
+2. The object can be assigned a new value
+3. Other operations have unspecified behavior (don't rely on them)
+
+**Standard library guarantees:**
+
+.. code-block:: cpp
+
+    #include <string>
+    #include <vector>
+
+    std::string s1 = "hello";
+    std::string s2 = std::move(s1);
+
+    // Valid operations on s1:
+    s1.~basic_string();  // OK: destructor
+    s1 = "world";        // OK: assignment
+
+    // Unspecified behavior (avoid):
+    // s1.size()         // Unspecified result
+    // s1[0]             // Undefined behavior if empty
+
+**Implementing moved-from state:**
+
+For user-defined types, ensure moved-from objects are in a valid state that
+can be safely destroyed. The simplest approach is to reset all resource handles
+to null or zero, which the destructor already handles:
+
+.. code-block:: cpp
+
+    class Resource {
+     public:
+      Resource(Resource &&other) noexcept
+          : ptr_(std::exchange(other.ptr_, nullptr)),
+            size_(std::exchange(other.size_, 0)) {
+        // other is now in valid empty state
+      }
+
+      ~Resource() {
+        delete[] ptr_;  // Safe even if ptr_ is nullptr
+      }
+
+     private:
+      int *ptr_ = nullptr;
+      size_t size_ = 0;
+    };
+
+See `Common Move Semantics Pitfalls`_ for examples of incorrect usage patterns.
+
+Return Value Optimization and Move Semantics
+---------------------------------------------
+
+When returning objects from functions, the compiler applies optimizations that
+can eliminate both copy and move operations entirely. Understanding the interaction
+between RVO, NRVO, and move semantics is crucial for writing efficient code. In
+many cases, the compiler constructs the return value directly in the caller's
+memory, bypassing both copy and move constructors. This optimization is so
+important that C++17 made it mandatory for certain cases (guaranteed copy elision).
+
+**Guaranteed copy elision (C++17):**
+
+When returning a prvalue (temporary), C++17 guarantees copy elision—no copy or
+move constructor is called. The object is constructed directly in the caller's
+storage:
+
+.. code-block:: cpp
+
+    Widget make_widget() {
+      return Widget(42);  // Guaranteed elision: constructed directly in caller
+    }
+
+**Named Return Value Optimization (NRVO):**
+
+When returning a named local variable, NRVO is an optional optimization that most
+compilers implement. However, it cannot apply in all cases (e.g., multiple return
+paths with different variables). If NRVO doesn't apply, the compiler uses the move
+constructor if available, otherwise falls back to copy:
+
+.. code-block:: cpp
+
+    Widget make_widget(bool flag) {
+      Widget w1(1);
+      Widget w2(2);
+      return flag ? w1 : w2;  // NRVO cannot apply (multiple return paths)
+                               // Falls back to move constructor
+    }
+
+**Don't use std::move on return:**
+
+A common mistake is using ``std::move`` when returning local variables. This is
+a pessimization because it prevents RVO/NRVO and forces a move operation when
+elision would have eliminated the operation entirely. The compiler already treats
+returned local variables as rvalues when move is needed:
+
+.. code-block:: cpp
+
+    // Bad: prevents RVO
+    Widget make_widget() {
+      Widget w(42);
+      return std::move(w);  // Pessimization!
+    }
+
+    // Good: allows RVO
+    Widget make_widget() {
+      Widget w(42);
+      return w;  // RVO or move (compiler decides)
+    }
+
+For comprehensive coverage of RVO, NRVO, and copy elision, see
+:doc:`cpp_rvo`.
+
+Emplace vs Insert
+-----------------
+
+:Source: `src/raii/emplace <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/emplace>`_
+
+Container operations like ``emplace_back`` and ``emplace`` construct elements
+in-place, avoiding temporary objects and unnecessary moves/copies. This is
+particularly beneficial for types that are expensive to construct.
+
+**push_back vs emplace_back:**
+
+.. code-block:: cpp
+
+    #include <vector>
+    #include <string>
+
+    std::vector<std::string> v;
+
+    // push_back: creates temporary, then moves it into vector
+    v.push_back(std::string("hello"));  // 1 construction + 1 move
+
+    // emplace_back: constructs directly in vector's storage
+    v.emplace_back("hello");            // 1 construction only
+
+**When push_back copies vs moves:**
+
+``push_back`` copies when given an lvalue, moves when given an rvalue:
+
+.. code-block:: cpp
+
+    std::vector<std::string> v;
+    std::string s = "hello";
+
+    v.push_back(s);             // lvalue: COPIES s into vector
+    v.push_back(std::move(s));  // rvalue: MOVES s into vector
+    v.push_back("world");       // rvalue (temporary): MOVES into vector
+
+**Expensive types benefit most:**
+
+For types with costly constructors, avoiding the temporary + move overhead matters:
+
+.. code-block:: cpp
+
+    std::vector<std::vector<int>> vv;
+
+    // emplace_back: constructs 1000-element vector directly in vv
+    vv.emplace_back(1000, 0);
+
+    // push_back equivalent would be:
+    // vv.push_back(std::vector<int>(1000, 0));  // construct + move
+
+**Map emplace avoids pair construction:**
+
+.. code-block:: cpp
+
+    std::map<std::string, std::string> m;
+
+    // emplace: constructs pair<string,string> in-place
+    m.emplace("key", "value");
+
+    // insert equivalent would be:
+    // m.insert(std::make_pair("key", "value"));  // construct pair + move
+
+**Non-copyable types:**
+
+For move-only types, ``emplace`` constructs in-place without requiring a copy:
+
+.. code-block:: cpp
+
+    struct NonCopyable {
+      int value;
+      explicit NonCopyable(int v) : value(v) {}
+      NonCopyable(const NonCopyable&) = delete;
+      NonCopyable(NonCopyable&&) noexcept = default;
+    };
+
+    std::vector<NonCopyable> v;
+    v.emplace_back(42);  // OK: constructs in-place
+
+**Caveat: emplace can hide bugs:**
+
+``emplace`` uses perfect forwarding, which can lead to unexpected implicit
+conversions that ``push_back`` would catch:
+
+.. code-block:: cpp
+
+    std::vector<std::vector<int>> vv;
+
+    vv.push_back(10);     // Error: no conversion from int to vector<int>
+    vv.emplace_back(10);  // Compiles! Creates vector<int>(10) - probably not intended
+
+Common Move Semantics Pitfalls
+-------------------------------
+
+:Source: `src/raii/move-pitfalls <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/move-pitfalls>`_
+
+Move semantics introduce several subtle pitfalls that can lead to bugs or
+performance issues. This section catalogs the most common mistakes developers
+make when working with move operations.
+
+**1. std::move doesn't move:**
+
+The most common misconception is that ``std::move`` performs a move. It doesn't—it's
+just an unconditional cast to rvalue reference. The actual move happens when a move
+constructor or move assignment is invoked with the result:
+
+.. code-block:: cpp
+
+    std::string s1 = "hello";
+    std::move(s1);              // Does nothing!
+    std::string s2 = std::move(s1);  // Now s1 is moved
+
+**2. Moving from const objects copies:**
+
+Move operations require modifying the source object, so they cannot work with
+``const`` objects. When you try to move from a ``const`` object, overload resolution
+selects the copy constructor instead, silently performing a copy:
+
+.. code-block:: cpp
+
+    const std::string s1 = "hello";
+    std::string s2 = std::move(s1);  // Calls copy constructor, not move
+
+**3. Accidentally using moved-from objects:**
+
+After moving from an object, it's in a valid but unspecified state. Using it
+(other than destruction or assignment) leads to unspecified or undefined behavior:
+
+.. code-block:: cpp
+
+    std::vector<int> v1 = {1, 2, 3};
+    std::vector<int> v2 = std::move(v1);
+
+    for (int x : v1) { /* ... */ }  // Bug: v1 is in unspecified state
+
+    v1 = {4, 5, 6};                 // OK: assign new value first
+    for (int x : v1) { /* ... */ }  // Now safe
+
+**4. Forgetting noexcept on move operations:**
+
+Without ``noexcept``, standard containers fall back to copying during reallocation
+for exception safety. This can cause significant performance degradation:
+
+.. code-block:: cpp
+
+    struct Widget {
+      Widget(Widget &&) { /* ... */ }  // Missing noexcept
+    };
+
+    std::vector<Widget> v;
+    v.push_back(Widget());
+    // Vector reallocation will copy instead of move!
+
+**5. Not resetting moved-from state:**
+
+Failing to reset the source object's state in move operations leads to double-free
+bugs when both objects' destructors run:
+
+.. code-block:: cpp
+
+    class Resource {
+     public:
+      Resource(Resource &&other) noexcept : ptr_(other.ptr_) {
+        // Bug: forgot to set other.ptr_ = nullptr
+      }
+      ~Resource() { delete ptr_; }  // Double-free!
+     private:
+      int *ptr_;
+    };
+
+**6. Self-move without protection:**
+
+Self-move through aliasing (e.g., ``x = std::move(*ptr)`` where ``ptr == &x``)
+can corrupt objects if not handled. Use explicit checks or the swap idiom:
+
+.. code-block:: cpp
+
+    Buffer &operator=(Buffer &&other) noexcept {
+      delete[] data_;
+      data_ = other.data_;  // Bug if this == &other
+      return *this;
     }
 
 Preventing Object Slicing
