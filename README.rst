@@ -107,6 +107,7 @@ with side-by-side code comparisons covering ownership, traits, error handling,
 smart pointers, and concurrency.
 
 - `Basics <docs/notes/rust/rust_basic.rst>`_
+- `Ownership & Borrowing <docs/notes/rust/rust_ownership.rst>`_
 - `RAII & Drop <docs/notes/rust/rust_raii.rst>`_
 - `Strings <docs/notes/rust/rust_string.rst>`_
 - `Collections <docs/notes/rust/rust_container.rst>`_

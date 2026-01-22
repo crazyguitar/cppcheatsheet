@@ -19,6 +19,7 @@ working examples.
    :maxdepth: 1
 
    rust_basic
+   rust_ownership
    rust_raii
    rust_string
    rust_container
