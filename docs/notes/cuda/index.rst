@@ -32,3 +32,4 @@ optimizing memory access patterns.
    cuda_memory_visibility
    cuda_pipelines
    cuda_ipc
+   cuda_hwloc
