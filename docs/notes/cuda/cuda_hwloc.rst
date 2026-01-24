@@ -226,11 +226,3 @@ on their position in the PCI hierarchy.
 
     // Start from root
     traverse(hwloc_get_root_obj(topology), 0);
-
-Best Practices
---------------
-
-- **Enable I/O filters**: Use ``hwloc_topology_set_io_types_filter(topology, HWLOC_TYPE_FILTER_KEEP_IMPORTANT)`` to discover PCI devices
-- **Match by PCI address**: Use (domain, bus, device) tuple to match CUDA devices to hwloc objects
-- **Pin threads to local cores**: For GPU workloads, pin CPU threads to cores on the same NUMA node as the GPU
-- **Co-locate GPU and NIC**: Place communicating GPU and network adapter on the same PCI bridge for lowest latency
