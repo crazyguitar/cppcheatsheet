@@ -1,4 +1,5 @@
 add_subdirectory(c-linkage)
+add_subdirectory(print)
 add_subdirectory(uniform-initialization)
 add_subdirectory(negative-array-index)
 add_subdirectory(reference-collapsing)

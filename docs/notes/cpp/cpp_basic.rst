@@ -9,6 +9,34 @@ C++ Basics
 .. contents:: Table of Contents
     :backlinks: none
 
+std::print (C++23)
+------------------
+
+:Source: `src/basic/print <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/basic/print>`_
+
+C++23 introduces ``std::print`` and ``std::println`` from the ``<print>`` header,
+bringing Python-style formatted output to C++. This is the modern way to print
+in C++, replacing the traditional ``std::cout`` approach.
+
+.. code-block:: cpp
+
+    #include <print>
+
+    int main() {
+      std::print("Hello, World!");    // No newline
+      std::println("Hello, World!");  // With newline
+    }
+
+The old way using ``std::cout``:
+
+.. code-block:: cpp
+
+    #include <iostream>
+
+    int main() {
+      std::cout << "Hello, World!" << std::endl;
+    }
+
 C Linkage and Name Mangling
 ---------------------------
 
