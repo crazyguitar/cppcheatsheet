@@ -72,6 +72,7 @@ groups, memory visibility, asynchronous pipelines, and multi-GPU communication.
 - `Memory Visibility <docs/notes/cuda/cuda_memory_visibility.rst>`_
 - `Pipelines <docs/notes/cuda/cuda_pipelines.rst>`_
 - `GPU-GPU Communication <docs/notes/cuda/cuda_ipc.rst>`_
+- `Hardware Topology <docs/notes/cuda/cuda_hwloc.rst>`_
 
 Bash & System Tools
 ===================

@@ -1,8 +1,15 @@
 add_subdirectory(c-linkage)
-add_subdirectory(print)
 add_subdirectory(uniform-initialization)
 add_subdirectory(negative-array-index)
 add_subdirectory(reference-collapsing)
 add_subdirectory(perfect-forwarding)
 add_subdirectory(bit-manipulation)
 add_subdirectory(addressof)
+
+# std::print requires GCC 14+ or Clang 18+
+include(CheckIncludeFileCXX)
+set(CMAKE_REQUIRED_FLAGS "-std=c++23")
+check_include_file_cxx("print" HAS_STD_PRINT)
+if(HAS_STD_PRINT)
+  add_subdirectory(print)
+endif()
