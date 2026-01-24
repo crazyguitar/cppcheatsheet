@@ -4,6 +4,10 @@ if(ENABLE_CUDA)
   set(CMAKE_CUDA_ARCHITECTURES native)
   add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
 
+  add_executable(cuda-device-properties device-properties/main.cu)
+  target_link_libraries(cuda-device-properties GTest::gtest_main)
+  gtest_discover_tests(cuda-device-properties)
+
   add_executable(cuda-function-qualifiers function-qualifiers/main.cu)
   target_link_libraries(cuda-function-qualifiers GTest::gtest_main)
   gtest_discover_tests(cuda-function-qualifiers)

@@ -4,7 +4,7 @@
 
 # ref: https://github.com/aws-samples/awsome-distributed-training/blob/main/micro-benchmarks/nccl-tests
 ARG CUDA_VERSION=12.8.1
-FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-devel-ubuntu22.04
+FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-devel-ubuntu24.04
 
 ARG GDRCOPY_VERSION=v2.5.1
 ARG EFA_INSTALLER_VERSION=1.46.0
@@ -41,7 +41,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated \
     debhelper \
     devscripts \
     git \
-    gcc \
+    gcc-14 \
+    g++-14 \
     gdb \
     kmod \
     libsubunit-dev \
@@ -49,14 +50,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated \
     openssh-client \
     openssh-server \
     pkg-config \
-    python3-distutils \
     vim \
     hwloc \
     libhwloc-dev \
-    python3.10-dev \
-    python3.10-venv \
+    python3-dev \
+    python3-venv \
     libboost-all-dev \
     libomp-dev
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100 \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
 
 #################################################
 ## Install Rust
@@ -80,8 +83,8 @@ ENV LD_LIBRARY_PATH=/usr/local/cuda/extras/CUPTI/lib64:/opt/amazon/openmpi/lib:/
 ENV PATH=/opt/amazon/openmpi/bin/:/opt/amazon/efa/bin:/usr/bin:/usr/local/bin:$PATH
 
 RUN curl https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py \
-    && python3 /tmp/get-pip.py \
-    && pip3 install awscli pynvml Cython
+    && python3 /tmp/get-pip.py --break-system-packages \
+    && pip3 install --break-system-packages awscli pynvml Cython
 
 #################################################
 ## Install NVIDIA GDRCopy
@@ -156,7 +159,7 @@ RUN git clone https://github.com/NVIDIA/nvshmem.git /nvshmem \
 
 # install nvshmemrun
 RUN cd /nvshmem/scripts && bash install_hydra.sh /tmp /opt/hydra && rm -rf /tmp/hydra-*
-RUN pip3 install nvshmem4py-cu12
+RUN pip3 install --break-system-packages nvshmem4py-cu12
 
 ENV LD_LIBRARY_PATH=/opt/amazon/pmix/lib:/opt/nvshmem/lib:$LD_LIBRARY_PATH
 ENV PATH=/opt/nvshmem/bin:$PATH
