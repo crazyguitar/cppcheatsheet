@@ -122,3 +122,11 @@ smart pointers, and concurrency.
 - `Threads <docs/notes/rust/rust_thread.rst>`_
 - `Modules <docs/notes/rust/rust_modules.rst>`_
 - `FFI & C++ Bindings <docs/notes/rust/rust_ffi.rst>`_
+
+Blog
+====
+
+Deep dives into advanced topics with detailed explanations, low-level implementations,
+and working code examples.
+
+- `Building NVSHMEM from Scratch: GPU-Initiated Networking <docs/notes/blog/rdma.rst>`_
