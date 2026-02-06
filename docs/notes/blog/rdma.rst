@@ -106,10 +106,36 @@ identifies the specific EFA device. On multi-NIC instances (e.g.,
 domains — one per NIC — which is important for topology-aware placement
 discussed in the next section.
 
-Topology
---------
+Topology: GPU-NIC Affinity and NUMA-Aware Placement
+----------------------------------------------------
+
+Hardware topology awareness is essential for achieving optimal RDMA performance
+in multi-GPU systems. On instances like AWS ``p5.48xlarge``, each GPU is
+physically closer to certain EFA NICs and CPU cores through the PCIe topology.
+Sending data through a nearby NIC avoids costly cross-NUMA or cross-PCIe-switch
+transfers.
+
+The diagram below illustrates this. If a process is bound to GPU 0, routing
+RDMA traffic through the EFA device on the same PCIe switch minimizes latency.
+Using a distant NIC (e.g., one closer to GPU 1) forces data to traverse
+additional PCIe hops, increasing transfer time.
 
 .. image:: ../../_static/blog/rdma/topology.png
+   :alt: GPU-NIC PCIe topology diagram showing NUMA-aware placement of GPUs and EFA devices
+
+Detecting Topology with hwloc
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+One approach to discovering hardware topology is to parse
+``/sys/bus/pci/devices`` directly, but this is error-prone and difficult to
+maintain. A better approach is to use
+`hwloc <https://github.com/open-mpi/hwloc>`_ — a portable library for
+querying the hierarchical topology of CPUs, caches, NUMA nodes, and PCI
+devices. The programming pattern resembles a DFS (pre-order traversal) over a
+tree data structure. You can find basic usage examples in the
+`hwloc cheat sheet <../cuda/cuda_hwloc.rst>`_ in this repository. For a real-world example of detecting GPU-NIC affinity on AWS ``p5.48xlarge``
+and using ``taskset`` to pin processes to topology-local CPU cores, see
+`affinity.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/affinity/affinity.h>`_.
 
 Bootstrap
 ---------
