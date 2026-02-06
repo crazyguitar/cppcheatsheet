@@ -137,10 +137,35 @@ tree data structure. You can find basic usage examples in the
 and using ``taskset`` to pin processes to topology-local CPU cores, see
 `affinity.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/affinity/affinity.h>`_.
 
-Bootstrap
----------
+Bootstrap: Out-of-Band Connection Setup for RDMA
+-------------------------------------------------
+
+Unlike traditional networking stacks where protocols like ARP handle address
+discovery automatically, RDMA requires an explicit out-of-band (OOB) exchange
+to set up connections. Before any RDMA data transfer can occur, peers must
+exchange endpoint addresses and memory region keys through a separate control
+channel — a process known as **bootstrapping**.
+
+Common bootstrap methods in the RDMA ecosystem include:
+
+- **MPI** — NCCL and NVSHMEM can use MPI collectives (e.g.,
+  ``MPI_Allgather``) to distribute connection identifiers such as
+  ``nccl_id`` across all ranks.
+- **TCP** — PyTorch's distributed runtime uses
+  `TCPStore <https://pytorch.org/docs/stable/distributed.html#torch.distributed.TCPStore>`_
+  as a key-value store to exchange connection information (e.g., rank
+  addresses, NCCL IDs) between processes.
+
+The diagram below illustrates the bootstrap flow:
 
 .. image:: ../../_static/blog/rdma/bootstrap.png
+   :alt: RDMA bootstrap sequence diagram showing out-of-band exchange of endpoint addresses and memory region keys
+
+Once the RDMA connection is established and memory regions are registered, the
+OOB channel is no longer needed for data transfer. In this post, the symmetric
+memory implementation uses ``MPI_Allgather`` to exchange remote RDMA addresses
+and memory region sizes — a straightforward approach compared to bootstrapping
+via peer-to-peer RDMA calls. You can learn more details from `here <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/bootstrap/mpi/fabric.h>`_.
 
 Communication
 -------------
