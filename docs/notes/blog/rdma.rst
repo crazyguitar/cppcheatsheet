@@ -38,16 +38,16 @@ Before diving into the implementation, let's outline the essential libraries,
 data structures, and algorithms required. The following components form the
 foundation for building a minimal NVSHMEM-like library:
 
-1. **EFA Library (libfabric)** – RDMA transport abstraction layer
-2. **Hardware Topology (hwloc)** – GPU-NIC affinity and NUMA-aware placement
-3. **RDMA Bootstrap** – Connection setup and endpoint exchange
-4. **GPUDirect RDMA (DMA-BUF)** – Zero-copy GPU memory registration for RDMA
-5. **Symmetric Memory** – Globally addressable memory across GPUs
-6. **GPU-CPU Queue (GDRCopy / Unified Memory / Pinned Memory)** – Low-latency signaling between GPU kernels and CPU proxy
-7. **Proxy Thread** – CPU-side thread that issues RDMA operations on behalf of GPU kernels
-8. **Communication Patterns (SEND/RECV/WRITE)** – RDMA verbs for data transfer
-9. **CUDA IPC** – Intra-node GPU-to-GPU communication via shared memory
-10. **NVSHMEM Implementation** – Putting it all together into a GPU-initiated networking layer
+- **EFA Library (libfabric)** – RDMA transport abstraction layer
+- **Hardware Topology (hwloc)** – GPU-NIC affinity and NUMA-aware placement
+- **RDMA Bootstrap** – Connection setup and endpoint exchange
+- **GPU-CPU Queue (GDRCopy / Unified Memory / Pinned Memory)** – Low-latency signaling between GPU kernels and CPU proxy
+- **Proxy Thread** – CPU-side thread that issues RDMA operations on behalf of GPU kernels
+- **Communication Patterns (SEND/RECV/WRITE)** – RDMA verbs for data transfer
+- **GPUDirect RDMA (DMA-BUF)** – Zero-copy GPU memory registration for RDMA
+- **Symmetric Memory** – Globally addressable memory across GPUs
+- **CUDA IPC** – Intra-node GPU-to-GPU communication via shared memory
+- **NVSHMEM Implementation** – Putting it all together into a GPU-initiated networking layer
 
 Fabric: RDMA Transport with libfabric and AWS EFA
 --------------------------------------------------
@@ -221,6 +221,34 @@ one-sided write maps naturally to this model: you specify a remote virtual
 address and offset, and the NIC performs a DMA-like transfer directly into
 remote memory. This is why one-sided RDMA is the foundation for NVSHMEM's
 ``nvshmem_put`` / ``nvshmem_get`` APIs.
+
+GPU-CPU Queue: Low-Latency Signaling for Proxy Threads
+-------------------------------------------------------
+
+The proxy thread architecture relies on a GPU-CPU queue to coordinate between
+GPU kernels and the CPU thread that issues RDMA operations. Since GPU kernels
+run thousands of threads, this is typically implemented as a multi-producer,
+single-consumer (MPSC) queue — many GPU threads enqueue requests, while a
+single CPU proxy thread dequeues and processes them.
+
+Several memory strategies can implement this queue, each with different
+trade-offs:
+
+- `GDRCopy <https://github.com/NVIDIA/gdrcopy>`_ — Maps GPU memory to CPU
+  address space via PCIe BAR (Base Address Register). Provides the lowest
+  latency for small transfers since the CPU can directly read/write GPU memory
+  without invoking CUDA APIs.
+- **CUDA Unified Memory** — Automatically migrates pages between GPU and CPU
+  on access. Simpler to program but incurs page fault overhead, making it
+  less predictable for latency-sensitive signaling.
+- **Pinned (Page-Locked) Host Memory** — CPU memory allocated with
+  ``cudaHostAlloc`` that GPUs can access directly via PCIe. A good balance
+  between simplicity and performance.
+
+For benchmarks comparing these approaches, see the
+`Command Queue Implementation Comparision <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#command-queue-implementation-comparison>`_
+in Libefaxx.
+
 
 Reference
 ---------
