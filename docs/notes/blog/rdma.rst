@@ -231,6 +231,9 @@ run thousands of threads, this is typically implemented as a multi-producer,
 single-consumer (MPSC) queue — many GPU threads enqueue requests, while a
 single CPU proxy thread dequeues and processes them.
 
+.. image:: ../../_static/blog/mpsc.png
+   :alt: Multi-producer single-consumer (MPSC) queue diagram showing GPU threads enqueueing requests to CPU proxy thread
+
 Several memory strategies can implement this queue, each with different
 trade-offs:
 
