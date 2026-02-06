@@ -43,10 +43,10 @@ foundation for building a minimal NVSHMEM-like system:
 9. **CUDA IPC** – Intra-node GPU-to-GPU communication via shared memory
 10. **NVSHMEM Implementation** – Putting it all together into a GPU-initiated networking layer
 
-.. image:: /_static/blog/rdma/fabric.png
+.. image:: ../../_static/blog/rdma/fabric.png
 
-.. image:: /_static/blog/rdma/topology.png
+.. image:: ../../_static/blog/rdma/topology.png
 
-.. image:: /_static/blog/rdma/bootstrap.png
+.. image:: ../../_static/blog/rdma/bootstrap.png
 
-.. image:: /_static/blog/rdma/comm.png
+.. image:: ../../_static/blog/rdma/comm.png
