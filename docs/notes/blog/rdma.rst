@@ -24,7 +24,7 @@ Instead, they rely on a "Proxy Thread" technique to achieve GIN. InfiniBand
 Reliable Connection (IBRC) uses this approach, as do similar implementations
 like UCCL and MSCCL++. In this post, we break down how proxy thread solutions
 achieve GPU-initiated behavior over AWS EFA similar to NVSHMEM. You can find
-the all experiments and benchmark results in [Libefaxx](https://github.com/crazyguitar/Libefaxx).
+the all experiments and benchmark results in `Libefaxx <https://github.com/crazyguitar/Libefaxx>`_.
 
 Key Components for Building NVSHMEM
 ------------------------------------
