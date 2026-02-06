@@ -20,3 +20,4 @@ Whether you're refreshing your memory on pointer arithmetic, exploring modern C+
    notes/tools/index
    notes/debug/index
    notes/rust/index
+   notes/blog/index
