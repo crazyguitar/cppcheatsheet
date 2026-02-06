@@ -222,9 +222,9 @@ remote memory. This is why one-sided RDMA is the foundation for NVSHMEM's
 Reference
 ---------
 
-1. Q. Le, "Libfabric EFA Series," 2024. `[link] <https://le.qun.ch/en/blog/2024/12/25/libfabric-efa-0-intro/>`_
-2. K. Punniyamurthy et al., "Optimizing Distributed ML Communication," arXiv:2305.06942, 2023. `[arXiv] <https://arxiv.org/pdf/2305.06942>`_
-3. S. Liu et al., "GPU-Initiated Networking," arXiv:2511.15076, 2025. `[arXiv] <https://arxiv.org/abs/2511.15076>`_
+1. Le, Q., "Libfabric EFA Series," 2024. `[link] <https://le.qun.ch/en/blog/2024/12/25/libfabric-efa-0-intro/>`_
+2. Punniyamurthy, K. et al., "Optimizing Distributed ML Communication," arXiv:2305.06942, 2023. `[arXiv] <https://arxiv.org/pdf/2305.06942>`_
+3. Liu, S. et al., "GPU-Initiated Networking," arXiv:2511.15076, 2025. `[arXiv] <https://arxiv.org/abs/2511.15076>`_
 4. UCCL Project, "UCCL: User-space Collective Communication Library." `[GitHub] <https://github.com/uccl-project/uccl>`_
 5. Microsoft, "MSCCL++: Multi-Scale Collective Communication Library." `[GitHub] <https://github.com/microsoft/mscclpp>`_
 6. DeepSeek-AI, "DeepEP: Expert parallelism with GPU-initiated communication." `[GitHub] <https://github.com/deepseek-ai/DeepEP>`_
