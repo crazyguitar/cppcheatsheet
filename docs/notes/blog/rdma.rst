@@ -23,8 +23,10 @@ However, not all RDMA providers support IBGDA (at least as of late 2025).
 Instead, they rely on a "Proxy Thread" technique to achieve GIN. InfiniBand
 Reliable Connection (IBRC) uses this approach, as do similar implementations
 like UCCL and MSCCL++. In this post, we break down how proxy thread solutions
-achieve GPU-initiated behavior over AWS EFA similar to NVSHMEM. You can find
-the all experiments and benchmark results in `Libefaxx <https://github.com/crazyguitar/Libefaxx>`_.
+achieve GPU-initiated behavior over AWS EFA similar to NVSHMEM.
+
+.. note::
+   All source code and benchmarks are available at `Libefaxx <https://github.com/crazyguitar/Libefaxx>`_.
 
 Key Components for Building NVSHMEM
 ------------------------------------
@@ -117,7 +119,7 @@ transfers.
 
 The diagram below illustrates this. If a process is bound to GPU 0, routing
 RDMA traffic through the EFA device on the same PCIe switch minimizes latency.
-Using a distant NIC (e.g., one closer to GPU 1) forces data to traverse
+Using a distant NIC (e.g., one closer to GPU 4) forces data to traverse
 additional PCIe hops, increasing transfer time.
 
 .. image:: ../../_static/blog/rdma/topology.png
@@ -167,10 +169,62 @@ memory implementation uses ``MPI_Allgather`` to exchange remote RDMA addresses
 and memory region sizes — a straightforward approach compared to bootstrapping
 via peer-to-peer RDMA calls. You can learn more details from `here <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/bootstrap/mpi/fabric.h>`_.
 
-Communication
--------------
+Communication: RDMA Verbs and Data Transfer Patterns
+-----------------------------------------------------
+
+`libfabric` supports two primary communication patterns, each suited to different use
+cases:
+
+Two-Sided Communication (SEND/RECV)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This pattern resembles traditional TCP/IP socket communication. Both the sender
+and receiver must actively participate — the sender calls ``fi_sendmsg`` and
+the receiver calls ``fi_recvmsg``. Each side's completion queue (CQ) signals
+when its respective operation completes. This is useful when the receiver needs
+to know exactly when data arrives and control where it lands.
+
+One-Sided Communication (RDMA WRITE)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This pattern resembles a producer-consumer model with shared memory. The writer
+uses ``fi_writemsg`` to write directly into the remote node's registered memory
+region (MR) — the remote CPU is not involved in the data path. Only the
+writer's CQ signals completion; the remote side has no automatic notification
+that data arrived.
+
+To notify the remote side, RDMA provides **write with immediate data**
+(``FI_REMOTE_CQ_DATA``). The writer attaches a small immediate value to the
+write operation. When the write completes, the remote CQ receives a completion
+event containing this immediate data, signaling that new data is available.
+This is commonly used as an "end-of-write" tag.
 
 .. image:: ../../_static/blog/rdma/comm.png
+   :alt: RDMA communication patterns diagram comparing two-sided SEND/RECV with one-sided WRITE with immediate data
+
+Implementation examples for both patterns are available in Libefaxx:
+`Send/Recv benchmark <https://github.com/crazyguitar/Libefaxx/tree/main/experiments/sendrecv>`_ and
+`Write benchmark <https://github.com/crazyguitar/Libefaxx/tree/main/experiments/write>`_.
+
+Why NVSHMEM Uses One-Sided Semantics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+At first glance, the name "NVSHMEM" (and OpenSHMEM) might suggest it is just
+another shared memory IPC library. However, NVSHMEM also supports inter-node
+communication over RDMA. The "SHMEM" terminology reflects the programming
+model: like shared memory IPC, the communication is one-sided — a producer
+writes to a remote address without the consumer explicitly receiving. RDMA's
+one-sided write maps naturally to this model: you specify a remote virtual
+address and offset, and the NIC performs a DMA-like transfer directly into
+remote memory. This is why one-sided RDMA is the foundation for NVSHMEM's
+``nvshmem_put`` / ``nvshmem_get`` APIs.
 
 Reference
 ---------
+
+1. Q. Le, "Libfabric EFA Series," 2024. `[link] <https://le.qun.ch/en/blog/2024/12/25/libfabric-efa-0-intro/>`_
+2. K. Punniyamurthy et al., "Optimizing Distributed ML Communication," arXiv:2305.06942, 2023. `[arXiv] <https://arxiv.org/pdf/2305.06942>`_
+3. S. Liu et al., "GPU-Initiated Networking," arXiv:2511.15076, 2025. `[arXiv] <https://arxiv.org/abs/2511.15076>`_
+4. UCCL Project, "UCCL: User-space Collective Communication Library." `[GitHub] <https://github.com/uccl-project/uccl>`_
+5. Microsoft, "MSCCL++: Multi-Scale Collective Communication Library." `[GitHub] <https://github.com/microsoft/mscclpp>`_
+6. DeepSeek-AI, "DeepEP: Expert parallelism with GPU-initiated communication." `[GitHub] <https://github.com/deepseek-ai/DeepEP>`_
