@@ -41,11 +41,11 @@ foundation for building a minimal NVSHMEM-like library:
 - **EFA Library (libfabric)** – RDMA transport abstraction layer
 - **Hardware Topology (hwloc)** – GPU-NIC affinity and NUMA-aware placement
 - **RDMA Bootstrap** – Connection setup and endpoint exchange
+- **Communication Patterns (SEND/RECV/WRITE)** – RDMA verbs for data transfer
 - **GPU-CPU Queue (GDRCopy / Unified Memory / Pinned Memory)** – Low-latency signaling between GPU kernels and CPU proxy
 - **Proxy Thread** – CPU-side thread that issues RDMA operations on behalf of GPU kernels
-- **Communication Patterns (SEND/RECV/WRITE)** – RDMA verbs for data transfer
-- **GPUDirect RDMA (DMA-BUF)** – Zero-copy GPU memory registration for RDMA
 - **Symmetric Memory** – Globally addressable memory across GPUs
+- **GPUDirect RDMA (DMA-BUF)** – Zero-copy GPU memory registration for RDMA
 - **CUDA IPC** – Intra-node GPU-to-GPU communication via shared memory
 - **NVSHMEM Implementation** – Putting it all together into a GPU-initiated networking layer
 
@@ -252,6 +252,17 @@ For benchmarks comparing these approaches, see the
 `Command Queue Implementation Comparision <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#command-queue-implementation-comparison>`_
 in Libefaxx.
 
+Symmetric Memory
+----------------
+
+GPUDirect RDMA
+--------------
+
+CUDA IPC
+--------
+
+Simple NVSHMEM Implementation
+-----------------------------
 
 Reference
 ---------
