@@ -264,15 +264,12 @@ Several memory strategies can implement this queue, each with different
 trade-offs:
 
 - `GDRCopy <https://github.com/NVIDIA/gdrcopy>`_ — Maps GPU memory to CPU
-  address space via PCIe BAR (Base Address Register). Provides the lowest
-  latency for small transfers since the CPU can directly read/write GPU memory
-  without invoking CUDA APIs.
+  address space via PCIe BAR (Base Address Register). The CPU can directly
+  read/write GPU memory without invoking CUDA APIs.
 - **CUDA Unified Memory** — Automatically migrates pages between GPU and CPU
-  on access. Simpler to program but incurs page fault overhead, making it
-  less predictable for latency-sensitive signaling.
+  on access. Simpler to program but incurs page fault overhead on first access.
 - **Pinned (Page-Locked) Host Memory** — CPU memory allocated with
-  ``cudaHostAlloc`` that GPUs can access directly via PCIe. A good balance
-  between simplicity and performance.
+  ``cudaHostAlloc`` that GPUs can access directly via PCIe.
 
 For benchmarks comparing these approaches, see the
 `Command Queue Implementation Comparison <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#command-queue-implementation-comparison>`_
