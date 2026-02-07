@@ -336,11 +336,12 @@ in Libefaxx.
 CUDA IPC
 --------
 
-RDMA handles inter-node communication, but GPUs within the same node can
-transfer data more efficiently through PCIe or NVLink without involving the
-network stack. CUDA IPC (Inter-Process Communication) enables this by allowing
-one process to export a GPU memory handle that another process on the same node
-can open and access directly — no CPU-side copies or NIC involvement.
+RDMA handles inter-node communication, but GPUs within the same node are
+connected by NVLink — a high-bandwidth interconnect that provides up to
+3600 Gbps on H100 GPUs, far exceeding what any network fabric can offer.
+CUDA IPC (Inter-Process Communication) allows processes to share GPU memory
+across process boundaries, enabling direct GPU-to-GPU transfers over NVLink
+without involving the CPU or NIC.
 
 IPC Handle Exchange
 ^^^^^^^^^^^^^^^^^^^
@@ -355,30 +356,27 @@ The setup follows a pattern similar to RDMA bootstrapping:
    device pointer that maps into the remote GPU's memory.
 
 Once opened, a GPU kernel can write directly to a peer GPU's buffer using the
-mapped pointer — the transfer occurs over PCIe or NVLink with no CPU
-involvement. A ``__threadfence_system()`` ensures writes are visible to the
-remote GPU.
+mapped pointer — the transfer occurs over NVLink with no CPU involvement. A
+``__threadfence_system()`` ensures writes are visible to the remote GPU. This
+access pattern — writing to a remote address without receiver participation —
+is identical to RDMA one-sided semantics, which makes CUDA IPC a natural fit
+for the symmetric memory abstraction.
 
 Integration with Symmetric Memory
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In our implementation, CUDA IPC is integrated into the symmetric memory layer.
-Each symmetric memory object maintains an array of IPC pointers alongside its
-RDMA remote addresses. When a ``put`` targets a peer on the same node, the
-library uses the IPC pointer for a direct GPU-to-GPU copy instead of routing
-through the proxy thread and NIC — significantly reducing latency for
-intra-node transfers.
-
-For implementation details, see
-`symmetric.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/rdma/symmetric.h>`_
+Because CUDA IPC and RDMA one-sided write share the same put/get programming
+model — both operate on a remote virtual address without receiver
+participation — the symmetric memory layer can store IPC pointers and RDMA
+remote addresses side by side in a single data structure. At runtime, the
+library checks whether the target PE resides on the same node. If so, it
+writes directly through the IPC pointer over NVLink; otherwise, it enqueues
+the request to the proxy thread for RDMA delivery. This routing is transparent
+to the caller, and the performance difference is substantial: NVLink IPC
+transfers can reach ~2971 Gbps (78% of H100 NVLink peak), as shown in the
+`NVLink IPC benchmark <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#nvlink-gpu-to-gpu-communication-performance>`_.
+For implementation details, see `symmetric.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/rdma/symmetric.h>`_
 in Libefaxx.
-
-CUDA IPC is for intranode communication, which relies on NVlink to access
-other GPU data on the same node. The data transfer model is similar to one side
-operation by offering remote GPU's virtual address and size. This access pattern
-offer us a unfied way to maintain similar data structure in Symmetric Memory and
-once we detect the PEs are on the same node, we can utilize CUDA IPC to transfer
-data.
 
 Simple NVSHMEM Implementation
 -----------------------------
