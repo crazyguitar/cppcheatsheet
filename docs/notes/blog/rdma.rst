@@ -450,6 +450,26 @@ For the complete working example including proxy thread setup, see the
 `shmem experiment <https://github.com/crazyguitar/Libefaxx/tree/main/experiments/shmem>`_
 in Libefaxx.
 
+Conclusion
+----------
+
+The goal of this article was to learn how NVSHMEM-like libraries work by
+building one from scratch. Recent Mixture-of-Experts (MoE) implementations
+such as DeepEP have shown that high-performance GPU-initiated communication
+can significantly improve dispatch/combine latency beyond what naive All-to-All
+collectives achieve. To better understand the technologies behind these
+projects, I conducted a series of small experiments covering RDMA transport
+with libfabric, NUMA-aware topology discovery, out-of-band bootstrapping,
+one-sided communication, MPSC queues for proxy threads, symmetric memory,
+GPUDirect RDMA via DMA-BUF, and CUDA IPC over NVLink.
+
+I am grateful to the open-source projects referenced throughout this article —
+NVSHMEM, UCCL, MSCCL++, and DeepEP — whose designs and source code were
+invaluable in deepening my understanding of RDMA and CUDA communication. This
+article represents my current understanding, and I welcome any corrections or
+suggestions. For additional experiments and benchmark results, please refer to
+the `Libefaxx experiments <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#readme>`_.
+
 References
 ----------
 
