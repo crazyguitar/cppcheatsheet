@@ -305,8 +305,80 @@ in Libefaxx.
 GPUDirect RDMA
 --------------
 
+Standard RDMA requires data to reside in registered host memory. When the
+source data lives on a GPU, a naive approach copies GPU memory to a pinned host
+buffer, registers it, and then issues the RDMA operation — adding a full
+device-to-host transfer to every communication. GPUDirect RDMA eliminates this
+copy by allowing the NIC to read from and write to GPU memory directly over
+PCIe, without staging through host memory.
+
+DMA-BUF: Exporting GPU Memory to the NIC
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Linux kernel's `DMA-BUF <https://docs.kernel.org/driver-api/dma-buf.html>`_
+framework provides a standard mechanism for sharing memory buffers between
+devices. For GPUDirect RDMA, the workflow is:
+
+1. Allocate GPU memory with ``cudaMalloc``.
+2. Export a DMA-BUF file descriptor using
+   ``cuMemGetHandleForAddressRange`` with ``CU_MEM_RANGE_HANDLE_TYPE_DMA_BUF_FD``.
+3. Register the memory with libfabric using ``fi_mr_regattr`` with
+   ``FI_HMEM_CUDA`` and the DMA-BUF descriptor in ``fi_mr_dmabuf``.
+
+Once registered, the NIC can perform RDMA read/write operations directly
+against GPU memory through GPU virtual address. The DMA-BUF file descriptor is
+closed after registration, and the memory region is deregistered when no longer needed.
+
+For the full implementation, see
+`buffer.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/rdma/fabric/buffer.h>`_
+in Libefaxx.
+
 CUDA IPC
 --------
+
+RDMA handles inter-node communication, but GPUs within the same node can
+transfer data more efficiently through PCIe or NVLink without involving the
+network stack. CUDA IPC (Inter-Process Communication) enables this by allowing
+one process to export a GPU memory handle that another process on the same node
+can open and access directly — no CPU-side copies or NIC involvement.
+
+IPC Handle Exchange
+^^^^^^^^^^^^^^^^^^^
+
+The setup follows a pattern similar to RDMA bootstrapping:
+
+1. Each rank calls ``cudaIpcGetMemHandle`` to export a handle for its GPU
+   buffer.
+2. Handles are exchanged across local ranks via ``MPI_Allgather`` (or any
+   OOB channel).
+3. Each rank calls ``cudaIpcOpenMemHandle`` on peer handles to obtain a
+   device pointer that maps into the remote GPU's memory.
+
+Once opened, a GPU kernel can write directly to a peer GPU's buffer using the
+mapped pointer — the transfer occurs over PCIe or NVLink with no CPU
+involvement. A ``__threadfence_system()`` ensures writes are visible to the
+remote GPU.
+
+Integration with Symmetric Memory
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In our implementation, CUDA IPC is integrated into the symmetric memory layer.
+Each symmetric memory object maintains an array of IPC pointers alongside its
+RDMA remote addresses. When a ``put`` targets a peer on the same node, the
+library uses the IPC pointer for a direct GPU-to-GPU copy instead of routing
+through the proxy thread and NIC — significantly reducing latency for
+intra-node transfers.
+
+For implementation details, see
+`symmetric.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/rdma/symmetric.h>`_
+in Libefaxx.
+
+CUDA IPC is for intranode communication, which relies on NVlink to access
+other GPU data on the same node. The data transfer model is similar to one side
+operation by offering remote GPU's virtual address and size. This access pattern
+offer us a unfied way to maintain similar data structure in Symmetric Memory and
+once we detect the PEs are on the same node, we can utilize CUDA IPC to transfer
+data.
 
 Simple NVSHMEM Implementation
 -----------------------------
