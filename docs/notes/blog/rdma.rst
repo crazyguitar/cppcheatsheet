@@ -3,7 +3,7 @@ Building NVSHMEM from Scratch: GPU-Initiated Networking
 =========================================================
 
 .. meta::
-   :description: A technical guide to building NVSHMEM-like GPU-initiated networking using proxy threads, RDMA over AWS EFA, GPUDirect, symmetric memory, and CUDA IPC for distributed LLM training and inference.
+   :description: Build NVSHMEM from scratch: RDMA transport, GPUDirect, symmetric memory, proxy threads, and CUDA IPC over AWS EFA for GPU-initiated networking.
    :keywords: NVSHMEM, RDMA, GPUDirect, InfiniBand, NCCL, GPU communication, LLM training, distributed deep learning, MoE, DeepEP, CUDA, AWS EFA, libfabric, proxy thread, symmetric memory, CUDA IPC, All-to-All collective, GPU-initiated networking, GDRCopy, hwloc, DMA-BUF, OpenSHMEM
 
 .. contents:: Table of Contents
@@ -375,7 +375,9 @@ the request to the proxy thread for RDMA delivery. This routing is transparent
 to the caller, and the performance difference is substantial: NVLink IPC
 transfers can reach ~2971 Gbps (78% of H100 NVLink peak), as shown in the
 `NVLink IPC benchmark <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#nvlink-gpu-to-gpu-communication-performance>`_.
-For implementation details, see `symmetric.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/rdma/symmetric.h>`_
+
+For implementation details, see
+`symmetric.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/rdma/symmetric.h>`_
 in Libefaxx.
 
 Simple NVSHMEM Implementation
