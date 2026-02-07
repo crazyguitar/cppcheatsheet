@@ -3,51 +3,80 @@ Building NVSHMEM from Scratch: GPU-Initiated Networking
 =========================================================
 
 .. meta::
-   :description: Learn how to implement NVSHMEM-like GPU-initiated networking using proxy threads for RDMA, GPUDirect, and distributed LLM training.
-   :keywords: NVSHMEM, RDMA, GPUDirect, InfiniBand, NCCL, GPU communication, LLM training, distributed deep learning, MoE, DeepEP, CUDA
+   :description: A technical guide to building NVSHMEM-like GPU-initiated networking using proxy threads, RDMA over AWS EFA, GPUDirect, symmetric memory, and CUDA IPC for distributed LLM training and inference.
+   :keywords: NVSHMEM, RDMA, GPUDirect, InfiniBand, NCCL, GPU communication, LLM training, distributed deep learning, MoE, DeepEP, CUDA, AWS EFA, libfabric, proxy thread, symmetric memory, CUDA IPC, All-to-All collective, GPU-initiated networking, GDRCopy, hwloc, DMA-BUF, OpenSHMEM
+
+.. contents:: Table of Contents
+   :depth: 2
+   :local:
 
 Abstract
 --------
 
-GPU-to-GPU communication is critical for LLM training and inference, as many
-large language models cannot fit on a single GPU or even a single node. This
-requires partitioning model parameters across GPUs and using collective
-communication to aggregate results. NCCL is a widely-used collective library
-that achieves high efficiency over RDMA fabrics like InfiniBand or AWS Elastic
-Fabric Adapter (EFA) for exchanging data between GPUs. Recently, GPU-Initiated
-Networking (GIN) has gained attention for its ability to fuse CUDA kernels with
-GPUDirect communication. DeepEP exemplifies this approach—a high-performance
-MoE layer dispatch/combine implementation that significantly reduces All-to-All
+GPU-to-GPU communication is critical for large language model (LLM) training
+and inference, as modern models cannot fit on a single GPU or even a single
+node. This necessitates partitioning model parameters across GPUs and using
+collective communication to aggregate results. NCCL is a widely-used collective
+library that achieves high throughput over RDMA fabrics such as InfiniBand and
+AWS Elastic Fabric Adapter (EFA). Recently, GPU-Initiated Networking (GIN) [3]_ has
+gained attention for its ability to fuse CUDA kernels with GPUDirect
+communication, reducing kernel launch overhead and improving overlap. DeepEP
+[6]_ exemplifies this approach—a high-performance Mixture-of-Experts (MoE)
+layer dispatch/combine implementation that significantly reduces All-to-All
 collective latency using `NVSHMEM <https://github.com/NVIDIA/nvshmem>`_ with
 InfiniBand GPUDirect Async (IBGDA). However, not all RDMA providers support
 IBGDA (at least as of late 2025). Instead, they rely on a "Proxy Thread"
 technique to achieve GIN. InfiniBand Reliable Connection (IBRC) uses this
 approach, as do similar implementations like
-`UCCL <https://github.com/uccl-project/uccl>`_ and
-`MSCCL++ <https://github.com/microsoft/mscclpp>`_. In this post, we break down
-how proxy thread solutions achieve GPU-initiated behavior over AWS EFA similar
-to NVSHMEM.
+`UCCL <https://github.com/uccl-project/uccl>`_ [4]_ and
+`MSCCL++ <https://github.com/microsoft/mscclpp>`_ [5]_. In this article, we
+present a systematic breakdown of how proxy thread solutions achieve
+GPU-initiated behavior over AWS EFA, and describe the design and implementation
+of a minimal NVSHMEM-like library.
 
 .. note::
-   All source code and benchmarks are available at `Libefaxx <https://github.com/crazyguitar/Libefaxx>`_.
+   All source code and benchmarks are available at
+   `Libefaxx <https://github.com/crazyguitar/Libefaxx>`_.
 
-Key Components for Building NVSHMEM
-------------------------------------
+Introduction
+------------
 
-Before diving into the implementation, let's outline the essential libraries,
-data structures, and algorithms required. The following components form the
-foundation for building a minimal NVSHMEM-like library:
+The rapid scaling of LLMs has made efficient GPU-to-GPU communication a
+first-class concern in distributed systems. Libraries such as NCCL [2]_
+abstract collective operations over RDMA fabrics, but emerging workloads—
+particularly MoE architectures—demand finer-grained, kernel-level control over
+communication. NVSHMEM provides a GPU-initiated programming model where CUDA
+kernels directly issue put/get operations, enabling overlap of computation and
+communication without returning control to the host.
 
-- **EFA Library (libfabric)** – RDMA transport abstraction layer
-- **Hardware Topology (hwloc)** – GPU-NIC affinity and NUMA-aware placement
-- **RDMA Bootstrap** – Connection setup and endpoint exchange
-- **Communication Patterns (SEND/RECV/WRITE)** – RDMA verbs for data transfer
-- **GPU-CPU Queue (GDRCopy / Unified Memory / Pinned Memory)** – Low-latency signaling between GPU kernels and CPU proxy
-- **Proxy Thread** – CPU-side thread that issues RDMA operations on behalf of GPU kernels
-- **Symmetric Memory** – Globally addressable memory across GPUs
-- **GPUDirect RDMA (DMA-BUF)** – Zero-copy GPU memory registration for RDMA
-- **CUDA IPC** – Intra-node GPU-to-GPU communication via shared memory
-- **NVSHMEM Implementation** – Putting it all together into a GPU-initiated networking layer
+This article targets practitioners who wish to understand the internals of
+NVSHMEM/OpenSHMEM by building one from scratch. We decompose the problem into
+the following components and describe each in detail.
+
+First, we discuss the **RDMA transport layer**, where we use libfabric [1]_ to
+initialize fabric objects, create endpoints, and manage completion queues over
+AWS EFA. We then examine **hardware topology** discovery using hwloc, which
+enables NUMA-aware placement by mapping GPU-NIC affinity through the PCIe
+hierarchy — a critical step for minimizing cross-switch latency on multi-NIC
+instances. Next, we describe the **bootstrap** phase, in which peers exchange
+endpoint addresses and memory region keys through an out-of-band channel (e.g.,
+MPI or TCP) before any RDMA data transfer can occur.
+
+With the transport established, we cover two **communication patterns**
+supported by libfabric: two-sided SEND/RECV, which requires active
+participation from both peers, and one-sided RDMA WRITE, which allows a sender
+to write directly into remote registered memory without receiver involvement —
+the natural fit for NVSHMEM's put/get semantics. We then present the
+**GPU-CPU queue**, a multi-producer single-consumer (MPSC) structure that
+enables GPU kernels to enqueue RDMA requests to a **proxy thread** — a
+CPU-side thread that dequeues and issues fabric operations on behalf of the GPU,
+bridging the gap when hardware does not support IBGDA.
+
+Finally, we describe three remaining components that complete the design:
+**symmetric memory**, which provides a globally addressable memory space across
+all GPUs; **GPUDirect RDMA** via DMA-BUF, which enables zero-copy registration
+of GPU memory for direct NIC access; and **CUDA IPC**, which provides
+low-latency intra-node GPU-to-GPU data transfer through shared memory handles.
 
 Fabric: RDMA Transport with libfabric and AWS EFA
 --------------------------------------------------
@@ -55,7 +84,7 @@ Fabric: RDMA Transport with libfabric and AWS EFA
 To perform RDMA operations, applications typically use low-level libraries such
 as `libibverbs <https://github.com/linux-rdma/rdma-core/tree/master>`_ (for
 InfiniBand/RoCE) or `libfabric <https://github.com/ofiwg/libfabric>`_ (a
-higher-level, provider-agnostic fabric interface). Since this post targets AWS
+higher-level, provider-agnostic fabric interface). Since this article targets AWS
 Elastic Fabric Adapter (EFA), we use ``libfabric`` — the recommended interface
 for EFA. The AWS EFA provider in libfabric handles the
 `Scalable Reliable Datagram (SRD) <https://aws.amazon.com/blogs/hpc/in-the-search-for-performance-theres-more-than-one-way-to-build-a-network/>`_
@@ -69,11 +98,11 @@ The diagram below illustrates the core libfabric object hierarchy used to set
 up RDMA communication over EFA:
 
 - **Fabric** — represents the physical network (e.g., an EFA device).
-- **Domain** — maps to a specific network interface, similar to binding to an
+- **Domain** — maps to a specific network interface, analogous to binding to an
   IP address. Each domain provides access to resources such as memory
   registration and address resolution.
-- **Endpoint** — a communication channel, analogous to a socket or port. Each
-  endpoint is associated with:
+- **Endpoint** — a communication channel, analogous to a socket. Each endpoint
+  is associated with:
 
   - An **Address Vector (AV)** — a table that maps peer addresses for
     connectionless (datagram) communication.
@@ -90,7 +119,7 @@ Querying EFA Devices with fi_info
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 On AWS EC2 instances with EFA enabled (e.g., ``p4d.24xlarge``,
-``p5.48xlarge``), you can query available fabric providers using the
+``p5.48xlarge``), available fabric providers can be queried using the
 ``fi_info`` utility:
 
 .. code-block:: bash
@@ -107,7 +136,7 @@ On AWS EC2 instances with EFA enabled (e.g., ``p4d.24xlarge``,
 The output shows that the EFA provider exposes a datagram endpoint
 (``FI_EP_DGRAM``) using the ``FI_PROTO_EFA`` protocol. The ``domain`` field
 identifies the specific EFA device. On multi-NIC instances (e.g.,
-``p5.48xlarge`` with 32 EFA interfaces), ``fi_info`` will list multiple
+``p5.48xlarge`` with 32 EFA interfaces), ``fi_info`` lists multiple
 domains — one per NIC — which is important for topology-aware placement
 discussed in the next section.
 
@@ -117,33 +146,34 @@ Topology: GPU-NIC Affinity and NUMA-Aware Placement
 Hardware topology awareness is essential for achieving optimal RDMA performance
 in multi-GPU systems. On instances like AWS ``p5.48xlarge``, each GPU is
 physically closer to certain EFA NICs and CPU cores through the PCIe topology.
-Sending data through a nearby NIC avoids costly cross-NUMA or cross-PCIe-switch
-transfers.
+Routing RDMA traffic through a topology-local NIC avoids costly cross-NUMA or
+cross-PCIe-switch transfers.
 
-The diagram below illustrates this. If a process is bound to GPU 0, routing
-RDMA traffic through the EFA device on the same PCIe switch minimizes latency.
-Using a distant NIC (e.g., one closer to GPU 4) forces data to traverse
-additional PCIe hops, increasing transfer time.
+The diagram below illustrates this principle. If a process is bound to GPU 0,
+routing RDMA traffic through the EFA device on the same PCIe switch minimizes
+latency. Using a distant NIC (e.g., one closer to GPU 4) forces data to
+traverse additional PCIe hops, increasing transfer time.
 
 .. image:: ../../_static/blog/rdma/topology.png
-   :alt: GPU-NIC PCIe topology diagram showing NUMA-aware placement of GPUs and EFA devices
+   :alt: GPU-NIC PCIe topology diagram showing NUMA-aware placement of GPUs and EFA devices on AWS p5.48xlarge
 
 Detecting Topology with hwloc
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 One approach to discovering hardware topology is to parse
 ``/sys/bus/pci/devices`` directly, but this is error-prone and difficult to
-maintain. A better approach is to use
+maintain. A more robust approach is to use
 `hwloc <https://github.com/open-mpi/hwloc>`_ — a portable library for
 querying the hierarchical topology of CPUs, caches, NUMA nodes, and PCI
-devices. The programming pattern resembles a DFS (pre-order traversal) over a
-tree data structure. You can find basic usage examples in the
-`hwloc cheat sheet <../cuda/cuda_hwloc.rst>`_ in this repository. For a real-world example of detecting GPU-NIC affinity on AWS ``p5.48xlarge``
-and using ``taskset`` to pin processes to topology-local CPU cores, see
+devices. The programming pattern resembles a depth-first search (DFS) pre-order
+traversal over a tree data structure. Basic usage examples are available in the
+`hwloc cheat sheet <../cuda/cuda_hwloc.rst>`_. For a real-world example of
+detecting GPU-NIC affinity on AWS ``p5.48xlarge`` and using ``taskset`` to pin
+processes to topology-local CPU cores, see
 `affinity.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/affinity/affinity.h>`_.
 
-Bootstrap: Out-of-Band Connection Setup for RDMA
--------------------------------------------------
+Bootstrap: Out-of-Band Connection Setup
+----------------------------------------
 
 Unlike traditional networking stacks where protocols like ARP handle address
 discovery automatically, RDMA requires an explicit out-of-band (OOB) exchange
@@ -156,30 +186,28 @@ Common bootstrap methods in the RDMA ecosystem include:
 - **MPI** — NCCL and NVSHMEM can use MPI collectives (e.g.,
   ``MPI_Allgather``) to distribute connection identifiers such as
   ``nccl_id`` across all ranks.
-- **TCP** — PyTorch's distributed runtime uses
+- **TCPStore** — PyTorch's distributed runtime uses
   `TCPStore <https://pytorch.org/docs/stable/distributed.html#torch.distributed.TCPStore>`_
   as a key-value store to exchange connection information (e.g., rank
   addresses, NCCL IDs) between processes.
 
-The diagram below illustrates the bootstrap flow:
-
 .. image:: ../../_static/blog/rdma/bootstrap.png
-   :alt: RDMA bootstrap sequence diagram showing out-of-band exchange of endpoint addresses and memory region keys
+   :alt: RDMA bootstrap sequence diagram showing out-of-band exchange of endpoint addresses and memory region keys via MPI or TCP
 
 Once the RDMA connection is established and memory regions are registered, the
-OOB channel is no longer needed for data transfer. In this post, the symmetric
-memory implementation uses ``MPI_Allgather`` to exchange remote RDMA addresses
-and memory region sizes — a straightforward approach compared to bootstrapping
-via peer-to-peer RDMA calls. You can learn more details from `here <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/bootstrap/mpi/fabric.h>`_.
+OOB channel is no longer needed for data transfer. In our implementation, the
+symmetric memory layer uses ``MPI_Allgather`` to exchange remote RDMA addresses
+and memory region sizes. Further details are available in
+`fabric.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/bootstrap/mpi/fabric.h>`_.
 
 Communication: RDMA Verbs and Data Transfer Patterns
 -----------------------------------------------------
 
-`libfabric` supports two primary communication patterns, each suited to different use
-cases:
+libfabric supports two primary communication patterns, each suited to different
+use cases.
 
 Two-Sided Communication (SEND/RECV)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This pattern resembles traditional TCP/IP socket communication. Both the sender
 and receiver must actively participate — the sender calls ``fi_sendmsg`` and
@@ -188,7 +216,7 @@ when its respective operation completes. This is useful when the receiver needs
 to know exactly when data arrives and control where it lands.
 
 One-Sided Communication (RDMA WRITE)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This pattern resembles a producer-consumer model with shared memory. The writer
 uses ``fi_writemsg`` to write directly into the remote node's registered memory
@@ -210,17 +238,16 @@ Implementation examples for both patterns are available in Libefaxx:
 `Write benchmark <https://github.com/crazyguitar/Libefaxx/tree/main/experiments/write>`_.
 
 Why NVSHMEM Uses One-Sided Semantics
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-At first glance, the name "NVSHMEM" (and OpenSHMEM) might suggest it is just
-another shared memory IPC library. However, NVSHMEM also supports inter-node
-communication over RDMA. The "SHMEM" terminology reflects the programming
-model: like shared memory IPC, the communication is one-sided — a producer
-writes to a remote address without the consumer explicitly receiving. RDMA's
-one-sided write maps naturally to this model: you specify a remote virtual
-address and offset, and the NIC performs a DMA-like transfer directly into
-remote memory. This is why one-sided RDMA is the foundation for NVSHMEM's
-``nvshmem_put`` / ``nvshmem_get`` APIs.
+The name "NVSHMEM" (and OpenSHMEM) might suggest it is merely a shared memory
+IPC library. However, NVSHMEM also supports inter-node communication over RDMA.
+The "SHMEM" terminology reflects the programming model: like shared memory IPC,
+the communication is one-sided — a producer writes to a remote address without
+the consumer explicitly receiving. RDMA one-sided write maps naturally to this
+model: the caller specifies a remote virtual address and offset, and the NIC
+performs a DMA transfer directly into remote memory. This is why one-sided RDMA
+is the foundation for NVSHMEM's ``nvshmem_put`` / ``nvshmem_get`` APIs.
 
 GPU-CPU Queue: Low-Latency Signaling for Proxy Threads
 -------------------------------------------------------
@@ -232,7 +259,7 @@ single-consumer (MPSC) queue — many GPU threads enqueue requests, while a
 single CPU proxy thread dequeues and processes them.
 
 .. image:: ../../_static/blog/mpsc.png
-   :alt: Multi-producer single-consumer (MPSC) queue diagram showing GPU threads enqueueing requests to CPU proxy thread
+   :alt: Multi-producer single-consumer (MPSC) queue diagram showing GPU threads enqueueing RDMA requests to CPU proxy thread
 
 Several memory strategies can implement this queue, each with different
 trade-offs:
@@ -249,7 +276,7 @@ trade-offs:
   between simplicity and performance.
 
 For benchmarks comparing these approaches, see the
-`Command Queue Implementation Comparision <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#command-queue-implementation-comparison>`_
+`Command Queue Implementation Comparison <https://github.com/crazyguitar/Libefaxx/tree/main/experiments#command-queue-implementation-comparison>`_
 in Libefaxx.
 
 Symmetric Memory
@@ -264,12 +291,17 @@ CUDA IPC
 Simple NVSHMEM Implementation
 -----------------------------
 
-Reference
----------
+References
+----------
 
-1. Le, Q., "Libfabric EFA Series," 2024. `[link] <https://le.qun.ch/en/blog/2024/12/25/libfabric-efa-0-intro/>`_
-2. Punniyamurthy, K. et al., "Optimizing Distributed ML Communication," arXiv:2305.06942, 2023. `[arXiv] <https://arxiv.org/pdf/2305.06942>`_
-3. Liu, S. et al., "GPU-Initiated Networking," arXiv:2511.15076, 2025. `[arXiv] <https://arxiv.org/abs/2511.15076>`_
-4. UCCL Project, "UCCL: User-space Collective Communication Library." `[GitHub] <https://github.com/uccl-project/uccl>`_
-5. Microsoft, "MSCCL++: Multi-Scale Collective Communication Library." `[GitHub] <https://github.com/microsoft/mscclpp>`_
-6. DeepSeek-AI, "DeepEP: Expert parallelism with GPU-initiated communication." `[GitHub] <https://github.com/deepseek-ai/DeepEP>`_
+.. [1] Le, Q., "Libfabric EFA Series," 2024. Available: https://le.qun.ch/en/blog/2024/12/25/libfabric-efa-0-intro/
+
+.. [2] Punniyamurthy, K. et al., "Optimizing Distributed ML Communication with Collective Operations," *arXiv preprint arXiv:2305.06942*, 2023.
+
+.. [3] Liu, S. et al., "GPU-Initiated Networking," *arXiv preprint arXiv:2511.15076*, 2025.
+
+.. [4] UCCL Project, "UCCL: User-space Collective Communication Library." Available: https://github.com/uccl-project/uccl
+
+.. [5] Microsoft, "MSCCL++: Multi-Scale Collective Communication Library." Available: https://github.com/microsoft/mscclpp
+
+.. [6] DeepSeek-AI, "DeepEP: Expert Parallelism with GPU-Initiated Communication." Available: https://github.com/deepseek-ai/DeepEP
