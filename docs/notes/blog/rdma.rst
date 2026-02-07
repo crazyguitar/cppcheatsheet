@@ -7,8 +7,7 @@ Building NVSHMEM from Scratch: GPU-Initiated Networking
    :keywords: NVSHMEM, RDMA, GPUDirect, InfiniBand, NCCL, GPU communication, LLM training, distributed deep learning, MoE, DeepEP, CUDA, AWS EFA, libfabric, proxy thread, symmetric memory, CUDA IPC, All-to-All collective, GPU-initiated networking, GDRCopy, hwloc, DMA-BUF, OpenSHMEM
 
 .. contents:: Table of Contents
-   :depth: 2
-   :local:
+    :backlinks: none
 
 Abstract
 --------
@@ -258,7 +257,7 @@ run thousands of threads, this is typically implemented as a multi-producer,
 single-consumer (MPSC) queue — many GPU threads enqueue requests, while a
 single CPU proxy thread dequeues and processes them.
 
-.. image:: ../../_static/blog/mpsc.png
+.. image:: ../../_static/blog/rdma/mpsc.png
    :alt: Multi-producer single-consumer (MPSC) queue diagram showing GPU threads enqueueing RDMA requests to CPU proxy thread
 
 Several memory strategies can implement this queue, each with different
@@ -281,6 +280,27 @@ in Libefaxx.
 
 Symmetric Memory
 ----------------
+
+In NVSHMEM's `Memory Model <https://docs.nvidia.com/nvshmem/api/gen/mem-model.html>`_,
+symmetric memory refers to allocations that have the same name, type, and size
+on all PEs (Processing Elements). This uniformity is required because each PE
+must maintain RDMA metadata — remote virtual addresses and memory region
+sizes — for every other PE, so that one-sided operations can directly access
+remote memory without coordination.
+
+The diagram below illustrates a straightforward implementation of the symmetric
+memory data structure. Each PE's local symmetric object holds both a block of
+its own allocated memory and the remote virtual addresses of all other PEs.
+When a shmem-like API such as ``nvshmem_int_put`` is called, the library
+looks up the target PE's remote address and issues an RDMA write directly into
+that region.
+
+.. image:: ../../_static/blog/rdma/symm.png
+   :alt: Symmetric memory data structure diagram showing per-PE local memory blocks and remote virtual address tables
+
+For implementation details, see
+`memory.h <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/rdma/memory.h>`_
+in Libefaxx.
 
 GPUDirect RDMA
 --------------
