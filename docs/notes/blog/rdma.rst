@@ -381,6 +381,75 @@ in Libefaxx.
 Simple NVSHMEM Implementation
 -----------------------------
 
+.. image:: ../../_static/blog/rdma/shmem.png
+   :alt: Simple NVSHMEM implementation architecture diagram showing host API, device API, proxy thread, and IPC/RDMA routing
+
+With all the building blocks in place — RDMA transport, topology discovery,
+bootstrap, proxy thread, symmetric memory, GPUDirect RDMA, and CUDA IPC — we
+can assemble a minimal NVSHMEM-like API. The goal is to provide familiar
+``shmem_*`` functions that CUDA kernels call directly, while the library
+transparently handles intra-node vs. inter-node routing underneath.
+
+API Surface
+^^^^^^^^^^^
+
+The host-side API mirrors NVSHMEM's structure:
+
+- ``shmem_init`` / ``shmem_finalize`` — bootstrap MPI, discover topology,
+  create EFA endpoints, and establish connections.
+- ``shmem_malloc`` / ``shmem_free`` — allocate symmetric memory with
+  DMA-BUF registration, exchange RDMA keys via ``MPI_Sendrecv``, and
+  exchange CUDA IPC handles among local ranks.
+- ``shmem_my_pe`` / ``shmem_n_pes`` — query the current PE index and total
+  PE count.
+- ``shmem_barrier_all`` — global barrier across all PEs.
+
+On the device side, ``shmem_int_p`` (and other typed variants) perform a
+one-sided put from within a CUDA kernel. The implementation checks the target
+PE's IPC pointer: if non-null (same node), it writes directly over NVLink;
+otherwise, it writes to local symmetric memory, issues a ``__threadfence_system``,
+and pushes a request to the proxy thread's MPSC queue for RDMA delivery. The
+blocking variant calls ``shmem_quiet`` to wait until the proxy thread confirms
+completion.
+
+Example
+^^^^^^^
+
+The following example demonstrates a simple ring shift — each PE writes its
+rank to the next PE's symmetric buffer, equivalent to the
+`NVSHMEM example <https://docs.nvidia.com/nvshmem/api/using.html#example-nvshmem-program>`_:
+
+.. code-block:: cuda
+
+    #include <shmem/shmem.cuh>
+
+    template <typename Ctx>
+    __global__ void simple_shift(Ctx ctx, int* target, int mype, int npes) {
+      int peer = (mype + 1) % npes;
+      shmem_int_p(ctx, target, mype, peer);
+    }
+
+    int main() {
+      shmem_init();
+      int mype = shmem_my_pe();
+      int npes = shmem_n_pes();
+      int* target = static_cast<int*>(shmem_malloc(sizeof(int)));
+      auto ctx = shmem_ctx(target);
+
+      simple_shift<<<1, 1>>>(ctx, target, mype, npes);
+      // ... run proxy thread for inter-node RDMA if needed ...
+
+      shmem_barrier_all();
+      shmem_free(target);
+      shmem_finalize();
+    }
+
+For the full API implementation, see
+`shmem.cuh <https://github.com/crazyguitar/Libefaxx/blob/main/src/include/shmem/shmem.cuh>`_.
+For the complete working example including proxy thread setup, see the
+`shmem experiment <https://github.com/crazyguitar/Libefaxx/tree/main/experiments/shmem>`_
+in Libefaxx.
+
 References
 ----------
 
