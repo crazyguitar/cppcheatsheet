@@ -130,3 +130,27 @@ Deep dives into advanced topics with detailed explanations, low-level implementa
 and working code examples.
 
 - `Building NVSHMEM from Scratch: GPU-Initiated Networking <docs/notes/blog/rdma.rst>`_
+
+/cpp Skill
+==========
+
+This repository includes a comprehensive Claude Code skill that automatically provides C/C++ cheat sheet examples when you ask programming questions.
+
+**Installation:**
+
+.. code:: bash
+
+    # Install globally for Claude Code
+    mkdir -p ~/.claude/skills
+    cp -r skills ~/.claude/skills/cpp
+
+**Usage:**
+
+Once installed, simply ask C/C++ related questions and the skill will automatically provide relevant examples from this cheat sheet:
+
+- "How do I use smart pointers in C++?"
+- "Show me CUDA kernel examples"
+- "Best practices for C++ move semantics"
+- "How to debug with GDB and Valgrind?"
+- "Modern C++23 constexpr examples"
+- "POSIX threading and synchronization"
