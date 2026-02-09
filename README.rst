@@ -20,16 +20,8 @@ This repository includes a comprehensive Claude Code skill that automatically pr
     mkdir -p ~/.claude/skills
     cp -r skills ~/.claude/skills/cpp
 
-**Usage:**
-
-Once installed, simply ask C/C++ related questions and the skill will automatically provide relevant examples from this cheat sheet:
-
-- "How do I use smart pointers in C++?"
-- "Show me CUDA kernel examples"
-- "Best practices for C++ move semantics"
-- "How to debug with GDB and Valgrind?"
-- "Modern C++23 constexpr examples"
-- "POSIX threading and synchronization"
+    # +The skill covers everything from basic syntax to advanced topics like
+    # GPU programming, system programming, debugging and so on.
 
 Modern C Programming
 ====================
