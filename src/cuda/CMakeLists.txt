@@ -116,6 +116,31 @@ if(ENABLE_CUDA)
   target_link_libraries(cuda-libcuxx-latch GTest::gtest_main)
   gtest_discover_tests(cuda-libcuxx-latch)
 
+  # Graph examples
+  add_executable(cuda-graph-stream-capture graph-stream-capture/main.cu)
+  target_link_libraries(cuda-graph-stream-capture GTest::gtest_main)
+  gtest_discover_tests(cuda-graph-stream-capture)
+
+  add_executable(cuda-graph-explicit graph-explicit/main.cu)
+  target_link_libraries(cuda-graph-explicit GTest::gtest_main)
+  gtest_discover_tests(cuda-graph-explicit)
+
+  add_executable(cuda-graph-explicit-1d graph-explicit-1d/main.cu)
+  target_link_libraries(cuda-graph-explicit-1d GTest::gtest_main)
+  gtest_discover_tests(cuda-graph-explicit-1d)
+
+  add_executable(cuda-graph-update graph-update/main.cu)
+  target_link_libraries(cuda-graph-update GTest::gtest_main)
+  gtest_discover_tests(cuda-graph-update)
+
+  add_executable(cuda-graph-memory-nodes graph-memory-nodes/main.cu)
+  target_link_libraries(cuda-graph-memory-nodes GTest::gtest_main)
+  gtest_discover_tests(cuda-graph-memory-nodes)
+
+  add_executable(cuda-graph-conditional graph-conditional/main.cu)
+  target_link_libraries(cuda-graph-conditional GTest::gtest_main)
+  gtest_discover_tests(cuda-graph-conditional)
+
   # Thrust examples
   add_executable(cuda-thrust-basics thrust-basics/main.cu)
   target_link_libraries(cuda-thrust-basics GTest::gtest_main)

@@ -30,6 +30,7 @@ optimizing memory access patterns.
    cuda_thrust
    cuda_coop_groups
    cuda_memory_visibility
+   cuda_graph
    cuda_pipelines
    cuda_ipc
    cuda_hwloc

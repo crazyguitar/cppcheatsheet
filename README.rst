@@ -86,6 +86,7 @@ groups, memory visibility, asynchronous pipelines, and multi-GPU communication.
 - `Thrust <docs/notes/cuda/cuda_thrust.rst>`_
 - `Cooperative Groups <docs/notes/cuda/cuda_coop_groups.rst>`_
 - `Memory Visibility <docs/notes/cuda/cuda_memory_visibility.rst>`_
+- `CUDA Graph <docs/notes/cuda/cuda_graph.rst>`_
 - `Pipelines <docs/notes/cuda/cuda_pipelines.rst>`_
 - `GPU-GPU Communication <docs/notes/cuda/cuda_ipc.rst>`_
 - `Hardware Topology <docs/notes/cuda/cuda_hwloc.rst>`_

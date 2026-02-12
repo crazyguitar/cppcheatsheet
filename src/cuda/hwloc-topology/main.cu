@@ -58,9 +58,7 @@ TEST(Hwloc, GPUAffinity) {
   hwloc_obj_t obj = nullptr;
   bool found = false;
   while ((obj = hwloc_get_next_pcidev(topology, obj)) != nullptr) {
-    if (obj->attr->pcidev.domain == prop.pciDomainID &&
-        obj->attr->pcidev.bus == prop.pciBusID &&
-        obj->attr->pcidev.dev == prop.pciDeviceID) {
+    if (obj->attr->pcidev.domain == prop.pciDomainID && obj->attr->pcidev.bus == prop.pciBusID && obj->attr->pcidev.dev == prop.pciDeviceID) {
       found = true;
       break;
     }
