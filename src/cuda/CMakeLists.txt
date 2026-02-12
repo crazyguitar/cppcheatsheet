@@ -141,6 +141,19 @@ if(ENABLE_CUDA)
   target_link_libraries(cuda-graph-conditional GTest::gtest_main)
   gtest_discover_tests(cuda-graph-conditional)
 
+  # Quantization examples (require sm_89+ for FP8)
+  add_executable(cuda-quant-fp8-static quant-fp8-static/main.cu)
+  target_link_libraries(cuda-quant-fp8-static GTest::gtest_main)
+  gtest_discover_tests(cuda-quant-fp8-static)
+
+  add_executable(cuda-quant-fp8-dynamic quant-fp8-dynamic/main.cu)
+  target_link_libraries(cuda-quant-fp8-dynamic GTest::gtest_main)
+  gtest_discover_tests(cuda-quant-fp8-dynamic)
+
+  add_executable(cuda-quant-fp8-per-token quant-fp8-per-token/main.cu)
+  target_link_libraries(cuda-quant-fp8-per-token GTest::gtest_main)
+  gtest_discover_tests(cuda-quant-fp8-per-token)
+
   # Thrust examples
   add_executable(cuda-thrust-basics thrust-basics/main.cu)
   target_link_libraries(cuda-thrust-basics GTest::gtest_main)
