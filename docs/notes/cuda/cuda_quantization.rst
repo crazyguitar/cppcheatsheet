@@ -14,6 +14,71 @@ cut memory bandwidth and storage by 2–4×, with minimal accuracy loss. Modern 
 inference engines like vLLM use FP8 quantization on Hopper (H100) and Ada
 Lovelace (RTX 4090) GPUs, which have native FP8 tensor core support.
 
+Glossary
+--------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
+
+   * - Term
+     - Definition
+   * - **MMA**
+     - Matrix Multiply-Accumulate. The fundamental tensor core instruction that
+       computes ``D = A × B + C`` on small matrix tiles in hardware. Evolved
+       across generations: ``wmma`` (Volta, warp-level) → ``mma`` (Ampere, finer
+       PTX control) → ``wgmma`` (Hopper, warp-group level with TMA).
+   * - **wgmma**
+     - Warp Group MMA. Hopper's tensor core instruction where 4 warps (128
+       threads) cooperate on larger tiles, fed asynchronously via TMA.
+   * - **TMA**
+     - Tensor Memory Accelerator. Hopper hardware unit for async bulk data
+       movement between global memory and shared memory, bypassing the register
+       file.
+   * - **W8A8**
+     - Weight 8-bit, Activation 8-bit. Both weights and activations quantized to
+       8-bit (FP8 or INT8). The scheme used in vLLM's FP8 path.
+   * - **WnA16**
+     - Weight n-bit, Activation 16-bit (e.g., W4A16). Weights quantized to n
+       bits, activations stay in FP16/BF16. Weight-only quantization.
+   * - **AWQ**
+     - Activation-aware Weight Quantization. A 4-bit weight-only method that
+       selects which channels to keep at higher precision based on activation
+       importance rather than weight magnitude.
+   * - **GPTQ**
+     - Post-training quantization using approximate second-order (Hessian)
+       information to minimize quantization error layer by layer. Typically
+       4-bit weights.
+   * - **Marlin**
+     - High-performance 4-bit weight-only GEMM kernel (W4A16) optimized for
+       NVIDIA GPUs, used in vLLM for W4A16 inference. See
+       `IST-DASLab/marlin <https://github.com/IST-DASLab/marlin>`_.
+   * - **SmoothQuant**
+     - Technique from `Xiao et al., 2023 <https://arxiv.org/abs/2211.10438>`_
+       that migrates quantization difficulty from activations to weights.
+       Activations often have outlier channels (a few columns with very large
+       values) that make them hard to quantize, while weights are usually smooth.
+       SmoothQuant divides activations by a per-channel factor ``s`` and
+       multiplies weights by the same ``s``: ``Y = (X / s) @ (W * s)``. After
+       smoothing, both sides have similar dynamic ranges and can be quantized to
+       INT8/FP8 with less error. The factor ``s`` is calibrated offline from a
+       small dataset. Used in vLLM and TensorRT-LLM as a preprocessing step
+       before W8A8 INT8 quantization. Less critical for FP8 which handles
+       outliers better than INT8.
+   * - **mm**
+     - Matrix Multiply (GEMM). A single matmul kernel.
+   * - **group_mm**
+     - Grouped matrix multiply. Batched GEMMs where each batch element can have
+       different sizes, used in Mixture-of-Experts (MoE) models.
+   * - **c2x / c3x**
+     - CUTLASS 2.x / 3.x kernel architecture. c2x uses classic templates; c3x
+       uses CuTe layout algebra and wgmma (Hopper). c3x is significantly faster
+       on sm_90+.
+   * - **E4M3 / E5M2**
+     - Two FP8 variants. E4M3 (4 exponent, 3 mantissa, range ±448) for forward
+       pass inference. E5M2 (5 exponent, 2 mantissa, range ±57344) for gradients
+       during training (wider range, less precision).
+
 FP8 E4M3 Format
 ----------------
 
