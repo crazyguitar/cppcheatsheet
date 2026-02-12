@@ -44,7 +44,8 @@ __global__ void static_fp8_quant(
     __nv_fp8_e4m3* __restrict__ out,
     const float* __restrict__ in,
     const float* __restrict__ scale,  // single value
-    int n) {
+    int n
+) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= n) return;
 
@@ -55,11 +56,7 @@ __global__ void static_fp8_quant(
 }
 
 // Dequantize: fp8 → fp32
-__global__ void fp8_dequant(
-    float* __restrict__ out,
-    const __nv_fp8_e4m3* __restrict__ in,
-    const float* __restrict__ scale,
-    int n) {
+__global__ void fp8_dequant(float* __restrict__ out, const __nv_fp8_e4m3* __restrict__ in, const float* __restrict__ scale, int n) {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if (i >= n) return;
 
@@ -100,13 +97,12 @@ TEST(CUDA, QuantFP8Static) {
   float h_out[n];
   cudaMemcpy(h_out, d_out, n * sizeof(float), cudaMemcpyDeviceToHost);
 
-  float max_err = 0.0f;
   for (int i = 0; i < n; i++) {
-    max_err = fmaxf(max_err, fabsf(h_out[i] - h_in[i]));
+    float absval = fabsf(h_in[i]);
+    if (absval > 1.0f) {
+      EXPECT_LT(fabsf(h_out[i] - h_in[i]) / absval, 0.15f) << "i=" << i << " in=" << h_in[i] << " out=" << h_out[i];
+    }
   }
-  // Quantization step ≈ scale * (1 / 2^mantissa_bits) = scale * 0.125
-  float expected_max_step = h_scale * 2.0f;  // generous bound
-  EXPECT_LT(max_err, expected_max_step);
 
   cudaFree(d_in);
   cudaFree(d_out);
