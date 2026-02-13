@@ -90,6 +90,7 @@ groups, memory visibility, asynchronous pipelines, and multi-GPU communication.
 - `Quantization <docs/notes/cuda/cuda_quantization.rst>`_
 - `Pipelines <docs/notes/cuda/cuda_pipelines.rst>`_
 - `GPU-GPU Communication <docs/notes/cuda/cuda_ipc.rst>`_
+- `NCCL <docs/notes/cuda/cuda_nccl.rst>`_
 - `Hardware Topology <docs/notes/cuda/cuda_hwloc.rst>`_
 
 Bash & System Tools

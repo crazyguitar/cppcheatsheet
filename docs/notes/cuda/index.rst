@@ -33,5 +33,6 @@ optimizing memory access patterns.
    cuda_graph
    cuda_quantization
    cuda_pipelines
+   cuda_nccl
    cuda_ipc
    cuda_hwloc

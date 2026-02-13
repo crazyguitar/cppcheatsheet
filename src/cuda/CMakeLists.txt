@@ -175,6 +175,41 @@ if(ENABLE_CUDA)
   target_link_libraries(cuda-thrust-custom GTest::gtest_main)
   gtest_discover_tests(cuda-thrust-custom)
 
+  # NCCL examples
+  find_path(NCCL_INCLUDE_DIR nccl.h HINTS /opt/nccl/build/include $ENV{NCCL_HOME}/include)
+  find_library(NCCL_LIBRARY nccl HINTS /opt/nccl/build/lib $ENV{NCCL_HOME}/lib)
+  if(NCCL_INCLUDE_DIR AND NCCL_LIBRARY)
+    add_executable(cuda-nccl-allreduce nccl-allreduce/main.cu)
+    target_link_libraries(cuda-nccl-allreduce GTest::gtest_main ${NCCL_LIBRARY})
+    target_include_directories(cuda-nccl-allreduce PRIVATE ${NCCL_INCLUDE_DIR})
+    gtest_discover_tests(cuda-nccl-allreduce)
+
+    add_executable(cuda-nccl-broadcast nccl-broadcast/main.cu)
+    target_link_libraries(cuda-nccl-broadcast GTest::gtest_main ${NCCL_LIBRARY})
+    target_include_directories(cuda-nccl-broadcast PRIVATE ${NCCL_INCLUDE_DIR})
+    gtest_discover_tests(cuda-nccl-broadcast)
+
+    add_executable(cuda-nccl-reduce nccl-reduce/main.cu)
+    target_link_libraries(cuda-nccl-reduce GTest::gtest_main ${NCCL_LIBRARY})
+    target_include_directories(cuda-nccl-reduce PRIVATE ${NCCL_INCLUDE_DIR})
+    gtest_discover_tests(cuda-nccl-reduce)
+
+    add_executable(cuda-nccl-allgather nccl-allgather/main.cu)
+    target_link_libraries(cuda-nccl-allgather GTest::gtest_main ${NCCL_LIBRARY})
+    target_include_directories(cuda-nccl-allgather PRIVATE ${NCCL_INCLUDE_DIR})
+    gtest_discover_tests(cuda-nccl-allgather)
+
+    add_executable(cuda-nccl-reducescatter nccl-reducescatter/main.cu)
+    target_link_libraries(cuda-nccl-reducescatter GTest::gtest_main ${NCCL_LIBRARY})
+    target_include_directories(cuda-nccl-reducescatter PRIVATE ${NCCL_INCLUDE_DIR})
+    gtest_discover_tests(cuda-nccl-reducescatter)
+
+    add_executable(cuda-nccl-alltoall nccl-alltoall/main.cu)
+    target_link_libraries(cuda-nccl-alltoall GTest::gtest_main ${NCCL_LIBRARY})
+    target_include_directories(cuda-nccl-alltoall PRIVATE ${NCCL_INCLUDE_DIR})
+    gtest_discover_tests(cuda-nccl-alltoall)
+  endif()
+
   # hwloc topology example
   find_package(PkgConfig)
   if(PkgConfig_FOUND)
