@@ -247,17 +247,6 @@ All calls between ``ncclGroupStart`` and ``ncclGroupEnd`` are batched into a
 single operation. Without grouping, each Send/Recv pair would deadlock waiting
 for its matching peer.
 
-Best Practices
---------------
-
-- Always wrap multi-communicator calls in ``ncclGroupStart``/``ncclGroupEnd``
-- Use in-place operations (``sendbuff == recvbuff``) to save memory
-- Pin host memory with ``cudaMallocHost`` for staging buffers
-- Match NCCL calls 1:1 across all ranks — mismatched calls deadlock
-- Use ``NCCL_DEBUG=INFO`` environment variable to diagnose topology and ring selection
-- Prefer ``ncclAllReduce`` with ``ncclAvg`` over manual sum + divide for gradient averaging
-- Capture NCCL collectives into CUDA graphs for repeated operations to eliminate launch overhead
-
 CUDA Graph Capture
 ------------------
 
@@ -331,3 +320,13 @@ its own stream. All graphs are then launched and synchronized independently.
     ``ncclCommRegister`` is not required if NCCL kernels are launched from a
     CUDA graph captured via stream capture — NCCL handles registration
     automatically during capture.
+
+Best Practices
+--------------
+
+- Always wrap multi-communicator calls in ``ncclGroupStart``/``ncclGroupEnd``
+- Use in-place operations (``sendbuff == recvbuff``) to save memory
+- Pin host memory with ``cudaMallocHost`` for staging buffers
+- Match NCCL calls 1:1 across all ranks — mismatched calls deadlock
+- Use ``NCCL_DEBUG=INFO`` environment variable to diagnose topology and ring selection
+- Capture NCCL collectives into CUDA graphs for repeated operations to eliminate launch overhead

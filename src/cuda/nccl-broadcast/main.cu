@@ -180,6 +180,7 @@ TEST(NCCL, BroadcastGraphCapture) {
 
   // Reset non-root and replay
   buf.reset();
+  buf.fill(root, 42.0f);
   CUDAGraph::Launch(graphs, bc.streams, nDev);
   CUDAGraph::Sync(bc.streams, nDev);
 
