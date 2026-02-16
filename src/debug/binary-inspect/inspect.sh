@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Binary inspection tools cheatsheet — run after building binary-inspect_test
 # Works on both Linux (ELF) and macOS (Mach-O)
-set -uo pipefail
+set -euo pipefail
 
 BINARY="${1:?Usage: $0 <path-to-binary-inspect_test>}"
 
@@ -18,11 +18,16 @@ run() {
   echo "──────────────────────────────────────────────────────"
   echo "[$label] $ $*"
   echo "──────────────────────────────────────────────────────"
-  if "$@" 2>&1 | head -30; then
-    ((pass++))
+  local output rc=0
+  output=$("$@" 2>&1) || rc=$?
+  if [ -n "$output" ]; then
+    echo "$output" | head -30
+    pass=$((pass + 1))
+  elif [ "$rc" -eq 0 ]; then
+    pass=$((pass + 1))
   else
-    echo "(skipped or failed)"
-    ((fail++))
+    echo "(failed with exit code $rc)"
+    fail=$((fail + 1))
   fi
   echo
 }
