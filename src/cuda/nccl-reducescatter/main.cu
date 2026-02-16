@@ -11,6 +11,7 @@
 #include <nccl.h>
 
 #include <cassert>
+#include <memory>
 #include <vector>
 
 #define NCCL_CHECK(cmd)                                \
@@ -50,6 +51,13 @@ struct Buffer {
   }
 
   float* operator[](int i) { return d_buf[i]; }
+
+  void reset() {
+    for (int i = 0; i < ndev; i++) {
+      cudaSetDevice(i);
+      cudaMemset(d_buf[i], 0, size);
+    }
+  }
 };
 
 struct ReduceScatter {
@@ -100,6 +108,82 @@ TEST(NCCL, ReduceScatter) {
 
   ReduceScatter rs(nDev);
   rs(send, recv);
+
+  float expected = static_cast<float>(nDev * (nDev + 1) / 2);
+  for (int i = 0; i < nDev; i++) {
+    std::vector<float> h(recvcount);
+    cudaSetDevice(i);
+    cudaMemcpy(h.data(), recv[i], recvcount * sizeof(float), cudaMemcpyDeviceToHost);
+    EXPECT_FLOAT_EQ(h[0], expected) << "rank " << i;
+    EXPECT_FLOAT_EQ(h[recvcount - 1], expected) << "rank " << i;
+  }
+}
+
+// NCCL ReduceScatter with CUDA Graph Stream Capture
+
+struct CUDAGraph {
+  cudaGraphExec_t exec_ = nullptr;
+
+  template <typename F>
+  CUDAGraph(cudaStream_t s, F&& fn) {
+    cudaGraph_t g;
+    cudaStreamBeginCapture(s, cudaStreamCaptureModeGlobal);
+    fn();
+    cudaStreamEndCapture(s, &g);
+    cudaGraphInstantiate(&exec_, g, nullptr, nullptr, 0);
+    cudaGraphDestroy(g);
+  }
+
+  ~CUDAGraph() {
+    if (exec_) cudaGraphExecDestroy(exec_);
+  }
+  CUDAGraph(const CUDAGraph&) = delete;
+  CUDAGraph& operator=(const CUDAGraph&) = delete;
+
+  void launch(cudaStream_t s) { cudaGraphLaunch(exec_, s); }
+
+  static void Launch(std::vector<std::unique_ptr<CUDAGraph>>& gs, std::vector<cudaStream_t>& streams, int nDev) {
+    for (int i = 0; i < nDev; i++) {
+      cudaSetDevice(i);
+      gs[i]->launch(streams[i]);
+    }
+  }
+
+  static void Sync(std::vector<cudaStream_t>& streams, int nDev) {
+    for (int i = 0; i < nDev; i++) {
+      cudaSetDevice(i);
+      cudaStreamSynchronize(streams[i]);
+    }
+  }
+};
+
+TEST(NCCL, ReduceScatterGraphCapture) {
+  int nDev = 0;
+  cudaGetDeviceCount(&nDev);
+  if (nDev < 2) GTEST_SKIP() << "Need >= 2 GPUs";
+
+  constexpr int recvcount = 512;
+  const int sendcount = recvcount * nDev;
+  ReduceScatter rs(nDev);
+  Buffer send(nDev, sendcount), recv(nDev, recvcount);
+  for (int i = 0; i < nDev; i++) send.fill(i, static_cast<float>(i + 1));
+
+  // Warmup
+  rs(send, recv);
+
+  // Capture
+  std::vector<std::unique_ptr<CUDAGraph>> graphs(nDev);
+  for (int i = 0; i < nDev; i++) {
+    cudaSetDevice(i);
+    graphs[i] = std::make_unique<CUDAGraph>(rs.streams[i], [&, i] {
+      NCCL_CHECK(ncclReduceScatter(send[i], recv[i], recvcount, ncclFloat, ncclSum, rs.comms[i], rs.streams[i]));
+    });
+  }
+
+  // Reset and replay
+  recv.reset();
+  CUDAGraph::Launch(graphs, rs.streams, nDev);
+  CUDAGraph::Sync(rs.streams, nDev);
 
   float expected = static_cast<float>(nDev * (nDev + 1) / 2);
   for (int i = 0; i < nDev; i++) {

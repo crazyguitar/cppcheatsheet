@@ -13,7 +13,7 @@
 
 #include "helper.h"
 
-static const char *version_string = "binary-inspect v1.0";
+static const char* version_string = "binary-inspect v1.0";
 
 namespace demo {
 class Widget {

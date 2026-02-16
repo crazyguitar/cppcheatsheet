@@ -256,3 +256,78 @@ Best Practices
 - Match NCCL calls 1:1 across all ranks — mismatched calls deadlock
 - Use ``NCCL_DEBUG=INFO`` environment variable to diagnose topology and ring selection
 - Prefer ``ncclAllReduce`` with ``ncclAvg`` over manual sum + divide for gradient averaging
+- Capture NCCL collectives into CUDA graphs for repeated operations to eliminate launch overhead
+
+CUDA Graph Capture
+------------------
+
+NCCL collectives can be captured into CUDA graphs via stream capture, eliminating
+per-iteration kernel launch overhead. This is particularly effective for training
+loops where the same collective pattern repeats thousands of times. NCCL >= 2.15.1
+and CUDA >= 11.7 are required.
+
+Stream capture only **records** the operations — no kernels are executed during
+capture. The work is deferred until ``cudaGraphLaunch`` replays the graph.
+
+The pattern is: warmup the collective first (NCCL needs to establish internal
+state), then capture into a graph, instantiate, and replay. A small RAII wrapper
+makes this clean:
+
+.. code-block:: cuda
+
+    struct CUDAGraph {
+      cudaGraphExec_t exec_ = nullptr;
+
+      template <typename F>
+      CUDAGraph(cudaStream_t s, F&& fn) {
+        cudaGraph_t g;
+        cudaStreamBeginCapture(s, cudaStreamCaptureModeGlobal);
+        fn();
+        cudaStreamEndCapture(s, &g);
+        cudaGraphInstantiate(&exec_, g, nullptr, nullptr, 0);
+        cudaGraphDestroy(g);
+      }
+
+      ~CUDAGraph() { if (exec_) cudaGraphExecDestroy(exec_); }
+      void launch(cudaStream_t s) { cudaGraphLaunch(exec_, s); }
+    };
+
+Usage with a single collective:
+
+.. code-block:: cuda
+
+    // Warmup — NCCL initializes internal buffers on first call
+    ncclAllReduce(d_send, d_recv, count, ncclFloat, ncclSum, comm, stream);
+    cudaStreamSynchronize(stream);
+
+    // Capture and replay
+    CUDAGraph graph(stream, [&] {
+        ncclAllReduce(d_send, d_recv, count, ncclFloat, ncclSum, comm, stream);
+    });
+
+    for (int iter = 0; iter < num_iters; iter++) graph.launch(stream);
+    cudaStreamSynchronize(stream);
+
+Grouped operations (``ncclGroupStart``/``ncclGroupEnd``) are also capturable.
+The entire group becomes a single graph node:
+
+.. code-block:: cuda
+
+    CUDAGraph graph(stream, [&] {
+        ncclGroupStart();
+        for (int peer = 0; peer < nRanks; peer++) {
+            ncclSend(d_send + peer * chunk, chunk, ncclFloat, peer, comm, stream);
+            ncclRecv(d_recv + peer * chunk, chunk, ncclFloat, peer, comm, stream);
+        }
+        ncclGroupEnd();
+    });
+
+For multi-GPU single-process setups, each device needs its own graph captured on
+its own stream. All graphs are then launched and synchronized independently.
+
+.. note::
+
+    When using ``ncclMemAlloc`` for user buffer registration (NCCL >= 2.19.1),
+    ``ncclCommRegister`` is not required if NCCL kernels are launched from a
+    CUDA graph captured via stream capture — NCCL handles registration
+    automatically during capture.
