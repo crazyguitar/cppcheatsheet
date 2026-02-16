@@ -42,7 +42,7 @@ When you ask C/C++ questions, I will:
 **Async Programming:** CUDA pipelines, memory visibility, asynchronous execution
 
 ### Debugging & Profiling
-**Debug Tools:** GDB debugging, Valgrind memory analysis, sanitizers
+**Debug Tools:** GDB debugging, Valgrind memory analysis, sanitizers, binary inspection (nm, readelf, objdump, otool)
 **Performance:** Perf profiling, tracing, performance optimization
 **GPU Debugging:** Nsight Systems, CUDA debugging and profiling
 

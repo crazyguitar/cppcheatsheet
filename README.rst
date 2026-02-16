@@ -118,6 +118,7 @@ CUDA applications.
 - `Tracing <docs/notes/debug/tracing.rst>`_
 - `Perf <docs/notes/debug/perf.rst>`_
 - `Nsight Systems <docs/notes/debug/nsight.rst>`_
+- `Binary Tools <docs/notes/debug/binary_tools.rst>`_
 
 Rust for C++ Developers
 =======================

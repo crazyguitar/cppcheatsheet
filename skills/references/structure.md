@@ -60,6 +60,7 @@
 - [Tracing](https://cppcheatsheet.com/notes/debug/tracing.html) - System and application tracing
 - [Perf](https://cppcheatsheet.com/notes/debug/perf.html) - Performance analysis and profiling
 - [Nsight Systems](https://cppcheatsheet.com/notes/debug/nsight.html) - NVIDIA profiling tools
+- [Binary Tools](https://cppcheatsheet.com/notes/debug/binary_tools.html) - Binary inspection with nm, readelf, objdump, otool, ldd, strings, size
 
 ## Rust for C++ Developers
 - [Basics](https://cppcheatsheet.com/notes/rust/rust_basic.html) - Rust fundamentals for C++ developers

@@ -24,6 +24,7 @@ add_subdirectory(asm)
 add_subdirectory(c)
 add_subdirectory(cpp)
 add_subdirectory(modules)
+add_subdirectory(debug)
 
 if(ENABLE_CUDA)
   add_subdirectory(cuda)
