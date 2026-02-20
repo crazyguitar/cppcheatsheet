@@ -12,4 +12,4 @@ low-level, performance-critical systems.
 .. toctree::
    :maxdepth: 1
 
-   rdma
+   nvshmem

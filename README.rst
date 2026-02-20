@@ -149,4 +149,4 @@ Blog
 Deep dives into advanced topics with detailed explanations, low-level implementations,
 and working code examples.
 
-- `Building NVSHMEM from Scratch: GPU-Initiated Networking <docs/notes/blog/rdma.rst>`_
+- `Building NVSHMEM from Scratch: GPU-Initiated Networking <docs/notes/blog/nvshmem.rst>`_

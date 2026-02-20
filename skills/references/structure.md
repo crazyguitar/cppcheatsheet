@@ -78,6 +78,3 @@
 - [Threads](https://cppcheatsheet.com/notes/rust/rust_thread.html) - Safe concurrency and parallelism
 - [Modules](https://cppcheatsheet.com/notes/rust/rust_modules.html) - Code organization and visibility
 - [FFI & C++ Bindings](https://cppcheatsheet.com/notes/rust/rust_ffi.html) - Interoperability with C/C++
-
-## Blog
-- [Building NVSHMEM from Scratch](https://cppcheatsheet.com/notes/blog/rdma.html) - GPU-initiated networking deep dive
