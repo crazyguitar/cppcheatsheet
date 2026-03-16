@@ -41,9 +41,15 @@
 - [Thrust](https://cppcheatsheet.com/notes/cuda/cuda_thrust.html) - High-level parallel algorithms
 - [Cooperative Groups](https://cppcheatsheet.com/notes/cuda/cuda_coop_groups.html) - Thread cooperation patterns
 - [Memory Visibility](https://cppcheatsheet.com/notes/cuda/cuda_memory_visibility.html) - Memory models and synchronization
+- [CUDA Graph](https://cppcheatsheet.com/notes/cuda/cuda_graph.html) - Graph-based execution and optimization
+- [CUDA Quantization](https://cppcheatsheet.com/notes/cuda/cuda_quantization.html) - Quantization techniques on GPU
 - [Pipelines](https://cppcheatsheet.com/notes/cuda/cuda_pipelines.html) - Asynchronous execution pipelines
+- [NCCL](https://cppcheatsheet.com/notes/cuda/cuda_nccl.html) - Multi-GPU collective communication
 - [GPU-GPU Communication](https://cppcheatsheet.com/notes/cuda/cuda_ipc.html) - Multi-GPU programming
 - [Hardware Topology](https://cppcheatsheet.com/notes/cuda/cuda_hwloc.html) - Hardware locality and topology
+
+## Blog
+- [Building NVSHMEM from Scratch](https://cppcheatsheet.com/notes/blog/nvshmem.html) - GPU-initiated networking deep dive
 
 ## Bash & System Tools
 - [Bash](https://cppcheatsheet.com/notes/tools/bash.html) - Shell scripting and command-line tools

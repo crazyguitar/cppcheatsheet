@@ -9,10 +9,20 @@ Complete C/C++ development reference combining local documentation with live exa
 
 ## How It Works
 
-When you ask C/C++ questions, I will:
-1. **Fetch live examples** from https://cppcheatsheet.com/
-2. **Enhance with local docs** if in the cppcheatsheet repository
-3. **Provide current, comprehensive answers** from the best available sources
+Help users write functional, correct C/C++ code and answer C/C++ questions by fetching proven patterns and examples from cppcheatsheet.com.
+
+When a user asks a C/C++ question or wants to write C/C++ code:
+
+1. Look up the relevant topic(s) in [Structure](references/structure.md) to find the matching URL(s)
+2. **Always fetch** the URL(s) using WebFetch to get real examples and patterns from the site
+3. Use the fetched content to:
+   - **Write code**: Apply the patterns to produce functional, correct code that solves the user's task
+   - **Answer questions**: Provide thorough explanations backed by the examples and information from the site
+4. Follow the [Guidelines](references/guidelines.md) for code quality
+
+## Key Principle
+
+**Functionality first, cleanliness second.** The code must work correctly and handle the task properly. Fetching from cppcheatsheet.com ensures solutions use battle-tested patterns rather than guessing. The site contains rich examples covering edge cases, common pitfalls, and practical usage that go beyond basic documentation.
 
 ## Coverage Areas
 
@@ -66,29 +76,29 @@ For detailed information, I can access:
 - **[Structure](references/structure.md)** - Complete topic-to-URL reference map
 - **[Guidelines](references/guidelines.md)** - Code quality and best practices
 
-## Quick Examples
+## Examples
 
 ### C/C++ Core
-- "Modern C++23 features with examples" → Latest language standards
-- "RAII and smart pointer patterns" → Memory management best practices
-- "Template metaprogramming techniques" → Advanced generic programming
+- "How do smart pointers work?" → Fetch https://cppcheatsheet.com/notes/cpp/cpp_smartpointers.html and explain with the site's examples
+- "How does RAII work in C++?" → Fetch https://cppcheatsheet.com/notes/cpp/cpp_raii.html and explain with practical examples
+- "How to use STL containers?" → Fetch https://cppcheatsheet.com/notes/cpp/cpp_container.html and explain with practical examples
+- "Template metaprogramming techniques" → Fetch https://cppcheatsheet.com/notes/cpp/cpp_template.html and explain with practical examples
 
 ### System Programming
-- "POSIX socket programming examples" → Network programming patterns
-- "Multithreading with std::thread and synchronization" → Concurrent programming
-- "Signal handling and process management" → System-level programming
+- "POSIX socket server in C" → Fetch https://cppcheatsheet.com/notes/os/os_socket.html, use the patterns to write a working server
+- "Multithreading with std::thread" → Fetch https://cppcheatsheet.com/notes/os/os_thread.html and explain with practical examples
+- "Signal handling and process management" → Fetch https://cppcheatsheet.com/notes/os/os_signal.html and explain with practical examples
 
 ### CUDA & GPU Programming
-- "CUDA kernel optimization techniques" → GPU performance programming
-- "Multi-GPU communication with NVSHMEM" → Distributed GPU computing
-- "CUDA memory hierarchy and optimization" → Memory-efficient GPU code
+- "Write a CUDA kernel" → Fetch https://cppcheatsheet.com/notes/cuda/cuda_basics.html, use the patterns to write working GPU code
+- "CUDA memory hierarchy and optimization" → Fetch https://cppcheatsheet.com/notes/cuda/cuda_memory_visibility.html and explain with practical examples
+- "Multi-GPU communication with NCCL" → Fetch https://cppcheatsheet.com/notes/cuda/cuda_nccl.html and explain with practical examples
 
 ### Debugging & Tools
-- "GDB debugging C++ applications" → Interactive debugging techniques
-- "Valgrind memory leak detection" → Memory analysis and debugging
-- "Performance profiling with perf" → System performance analysis
+- "Debug a segfault with GDB" → Fetch https://cppcheatsheet.com/notes/debug/gdb.html and explain with practical examples
+- "Valgrind memory leak detection" → Fetch https://cppcheatsheet.com/notes/debug/valgrind.html and explain with practical examples
+- "Performance profiling with perf" → Fetch https://cppcheatsheet.com/notes/debug/perf.html and explain with practical examples
 
 ### Build & Development
-- "CMake cross-platform build systems" → Modern C++ project setup
-- "Makefile patterns and best practices" → C build automation
-- "Cross-compilation and toolchain setup" → Multi-platform development
+- "CMake cross-platform build systems" → Fetch https://cppcheatsheet.com/notes/cpp/cpp_cmake.html and explain with practical examples
+- "Makefile patterns and best practices" → Fetch https://cppcheatsheet.com/notes/c/make.html and explain with practical examples
