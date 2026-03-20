@@ -23,4 +23,5 @@ members = [
     "ffi",
     "lifetimes",
     "underscore",
+    "proc_macros",
 ]

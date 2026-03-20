@@ -140,6 +140,7 @@ smart pointers, and concurrency.
 - `Smart Pointers <docs/notes/rust/rust_smartptr.rst>`_
 - `Error Handling <docs/notes/rust/rust_error.rst>`_
 - `Threads <docs/notes/rust/rust_thread.rst>`_
+- `Macros <docs/notes/rust/rust_macros.rst>`_
 - `Modules <docs/notes/rust/rust_modules.rst>`_
 - `FFI & C++ Bindings <docs/notes/rust/rust_ffi.rst>`_
 

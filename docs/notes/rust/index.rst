@@ -31,5 +31,6 @@ working examples.
    rust_smartptr
    rust_error
    rust_thread
+   rust_macros
    rust_modules
    rust_ffi
