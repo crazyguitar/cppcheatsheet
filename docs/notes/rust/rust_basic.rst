@@ -74,6 +74,111 @@ explicitly cast/convert the value.
 Shadowing is useful in Rust for transforming a value while keeping the same name,
 especially when parsing or converting types:
 
+Underscore ``_`` Placeholder
+----------------------------
+
+:Source: `src/rust/underscore <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/underscore>`_
+
+Rust uses ``_`` as a wildcard or placeholder in several contexts: type inference,
+pattern matching, and ignoring unused values. C++ achieves similar goals with
+``auto``, ``std::ignore``, and ``[[maybe_unused]]``, but Rust's ``_`` is more
+versatile — especially for partial type inference, which C++ does not support.
+
+Partial Type Inference
+~~~~~~~~~~~~~~~~~~~~~~
+
+Rust allows inferring individual type parameters using ``_``, while C++ ``auto``
+is all-or-nothing — you either write the full type or let the compiler infer
+everything.
+
+**C++ (no partial inference):**
+
+.. code-block:: cpp
+
+    #include <vector>
+    #include <map>
+
+    // auto infers the entire type
+    auto v = std::vector{1, 2, 3};             // deduces vector<int>
+    auto m = std::map<std::string, int>{};     // must write full type or use auto
+
+    // Cannot say: "I know it's a vector, infer the element type"
+    // std::vector<auto> v = {1, 2, 3};        // not valid C++
+
+**Rust (partial inference with ``_``):**
+
+.. code-block:: rust
+
+    // Infer the element type, but specify the container
+    let v: Vec<_> = vec![1, 2, 3];             // compiler infers Vec<i32>
+
+    use std::collections::HashMap;
+    let m: HashMap<_, _> = vec![
+        ("key".to_string(), 1),
+    ].into_iter().collect();                    // infers HashMap<String, i32>
+
+    // Especially useful with collect() where the compiler
+    // needs to know the target collection type
+    let squares: Vec<_> = (0..5).map(|x| x * x).collect();
+
+Ignoring Values in Patterns
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rust's ``_`` can discard values in destructuring and ``match`` expressions. C++
+uses ``std::ignore`` with ``std::tie`` or unnamed variables in structured bindings.
+
+**C++:**
+
+.. code-block:: cpp
+
+    #include <tuple>
+
+    auto [x, _] = std::make_pair(1, 2);        // _ is just a variable name
+    // Note: _ is not special in C++, it's a regular identifier
+
+    int val;
+    std::tie(val, std::ignore) = std::make_pair(1, 2);  // truly discards
+
+**Rust:**
+
+.. code-block:: rust
+
+    // Destructuring — _ truly discards the value
+    let (x, _) = (1, 2);
+
+    // Match expressions
+    let value = Some(42);
+    match value {
+        Some(_) => println!("has a value"),    // don't care what's inside
+        None => println!("empty"),
+    }
+
+    // Ignoring parts of a struct
+    struct Point { x: i32, y: i32, z: i32 }
+    let p = Point { x: 1, y: 2, z: 3 };
+    let Point { x, .. } = p;                   // ignore y and z
+
+Suppressing Unused Warnings
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**C++:**
+
+.. code-block:: cpp
+
+    [[maybe_unused]] int result = do_something();  // suppress warning (C++17)
+
+**Rust:**
+
+.. code-block:: rust
+
+    let _result = do_something();   // prefix with _ to suppress warning
+
+.. note::
+
+    Rust's ``_`` is **not** like ``any`` in TypeScript or ``Object`` in Java.
+    It does not mean "any type." The compiler still determines a single concrete
+    type at compile time — ``_`` simply means "infer this type for me from context."
+
 Ownership
 ---------
 

@@ -22,4 +22,5 @@ members = [
     "modules",
     "ffi",
     "lifetimes",
+    "underscore",
 ]
