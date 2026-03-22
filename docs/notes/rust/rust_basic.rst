@@ -395,39 +395,8 @@ that returned references remain valid. The compiler provides no help.
 Slices
 ------
 
-Slices are references to a contiguous sequence of elements. They're similar to
-C++20's ``std::span`` but are a fundamental part of Rust.
-
-**C++ (std::span, C++20):**
-
-.. code-block:: cpp
-
-    #include <span>
-    #include <vector>
-
-    void print_slice(std::span<int> s) {
-      for (int x : s) std::cout << x << " ";
-    }
-
-    int main() {
-      std::vector<int> v = {1, 2, 3, 4, 5};
-      print_slice(std::span(v).subspan(1, 3));  // 2 3 4
-    }
-
-**Rust:**
-
-.. code-block:: rust
-
-    fn print_slice(s: &[i32]) {
-        for x in s {
-            print!("{} ", x);
-        }
-    }
-
-    fn main() {
-        let v = vec![1, 2, 3, 4, 5];
-        print_slice(&v[1..4]);  // 2 3 4
-    }
+See :doc:`rust_container` for details on slices (``&[T]``), ``Vec<T>``, and
+fixed-size arrays (``[T; N]``).
 
 The ``?`` Operator
 -------------------

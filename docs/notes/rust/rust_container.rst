@@ -203,6 +203,123 @@ return ``Option`` types, making it explicit when an element might not be found:
         println!("Length: {}, Capacity: {}", len, v.capacity());
     }
 
+``Vec<T>`` vs Fixed-size Arrays ``[T; N]``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rust has two main array types: ``Vec<T>`` (heap-allocated, growable) and
+``[T; N]`` (stack-allocated, fixed size known at compile time). C++ has the
+same distinction with ``std::vector<T>`` vs ``std::array<T, N>``.
+
+**C++:**
+
+.. code-block:: cpp
+
+    #include <array>
+    #include <vector>
+
+    int main() {
+        std::vector<uint8_t> rom;         // heap, size determined at runtime
+        rom.resize(0x4000);
+
+        std::array<uint8_t, 256> oam;     // stack, size fixed at compile time
+
+        return 0;
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    fn main() {
+        let rom: Vec<u8> = vec![0; 0x4000];    // heap, size determined at runtime
+
+        let oam: [u8; 256] = [0; 256];         // stack, size fixed at compile time
+    }
+
+Use ``Vec<T>`` when the size is unknown at compile time (e.g., loading ROM data
+from a file). Use ``[T; N]`` when the size is fixed by the hardware specification
+(e.g., PPU sprite memory is always 256 bytes).
+
+Slices ``&[T]``
+~~~~~~~~~~~~~~~~
+
+A slice ``&[T]`` is a borrowed view into a contiguous sequence of elements. It is
+the idiomatic way to pass arrays or vectors to functions without transferring
+ownership. In C++, the closest equivalent is ``std::span<T>`` (C++20) or passing
+``const T*`` with a length.
+
+**C++:**
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <span>
+    #include <vector>
+
+    // C++20: std::span borrows a contiguous range
+    void print_data(std::span<const uint8_t> data) {
+        for (auto byte : data) {
+            std::cout << (int)byte << " ";
+        }
+        std::cout << "\n";
+    }
+
+    // Before C++20: pass pointer + length
+    void print_data_legacy(const uint8_t* data, size_t len) {
+        for (size_t i = 0; i < len; ++i) {
+            std::cout << (int)data[i] << " ";
+        }
+        std::cout << "\n";
+    }
+
+    int main() {
+        std::vector<uint8_t> rom = {0x4E, 0x45, 0x53, 0x1A};
+        print_data(rom);               // pass vector as span
+        print_data({rom.data(), 2});    // pass first 2 bytes
+        return 0;
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    // &[u8] borrows a contiguous sequence — works with Vec, arrays, or other slices
+    fn print_data(data: &[u8]) {
+        for byte in data {
+            print!("{} ", byte);
+        }
+        println!();
+    }
+
+    fn main() {
+        let rom: Vec<u8> = vec![0x4E, 0x45, 0x53, 0x1A];
+        print_data(&rom);          // Vec<u8> auto-borrows as &[u8]
+        print_data(&rom[..2]);     // pass first 2 bytes as a slice
+
+        let arr: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
+        print_data(&arr);          // fixed-size array also works
+    }
+
+.. note::
+
+    Prefer ``&[T]`` over ``&Vec<T>`` in function parameters. A ``&[T]`` accepts
+    both ``Vec<T>`` and fixed-size arrays ``[T; N]``, making the function more
+    flexible. Returning ``&[T]`` from a method that owns a ``Vec<T>`` is also
+    idiomatic:
+
+    .. code-block:: rust
+
+        struct Cartridge {
+            prg_rom: Vec<u8>,
+        }
+
+        impl Cartridge {
+            // return &[u8] instead of &Vec<u8>
+            pub fn prg_rom(&self) -> &[u8] {
+                &self.prg_rom
+            }
+        }
+
 HashMap
 -------
 
