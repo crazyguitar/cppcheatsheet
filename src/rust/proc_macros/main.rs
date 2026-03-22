@@ -72,7 +72,7 @@ fn main() {
     // Built-in attributes
     let p = Point { x: 1.0, y: 2.0 };
     let p2 = p.clone();
-    println!("{:?}", p);          // Debug trait from #[derive]
+    println!("{:?}", p); // Debug trait from #[derive]
     println!("same? {}", p == p2); // PartialEq trait from #[derive]
     println!("platform: {}", platform());
 

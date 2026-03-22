@@ -429,6 +429,93 @@ C++20's ``std::span`` but are a fundamental part of Rust.
         print_slice(&v[1..4]);  // 2 3 4
     }
 
+The ``?`` Operator
+-------------------
+
+Rust's ``?`` operator unwraps a ``Result`` on success or returns the error early.
+It replaces verbose ``match`` blocks for error propagation.
+
+**C++ (manual error checking):**
+
+.. code-block:: cpp
+
+    #include <fstream>
+    #include <vector>
+    #include <optional>
+
+    std::optional<std::vector<char>> read_file(const std::string& path) {
+        std::ifstream file(path, std::ios::binary);
+        if (!file.is_open()) {
+            return std::nullopt;  // manual error check
+        }
+        std::vector<char> data((std::istreambuf_iterator<char>(file)),
+                                std::istreambuf_iterator<char>());
+        return data;
+    }
+
+**Rust (with ``?`` operator):**
+
+.. code-block:: rust
+
+    use std::fs;
+    use std::io;
+
+    fn read_file(path: &str) -> io::Result<Vec<u8>> {
+        let data = fs::read(path)?;  // returns Err early if file read fails
+        Ok(data)
+    }
+
+The ``?`` operator is equivalent to:
+
+.. code-block:: rust
+
+    let data = match fs::read(path) {
+        Ok(bytes) => bytes,        // unwrap the value
+        Err(e) => return Err(e),   // propagate the error
+    };
+
+.. note::
+
+    The ``?`` operator can only be used in functions that return ``Result``
+    (or ``Option``). It does not work in ``main()`` unless ``main`` returns
+    ``Result``.
+
+``Result<T, E>`` and ``io::Result<T>``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``Result`` is a generic enum with two type parameters:
+
+.. code-block:: rust
+
+    enum Result<T, E> {
+        Ok(T),    // success — holds a value of type T
+        Err(E),   // failure — holds an error of type E
+    }
+
+The standard library provides a type alias ``io::Result<T>`` for I/O operations,
+which fixes the error type to ``io::Error``:
+
+.. code-block:: rust
+
+    // defined in std::io
+    type Result<T> = Result<T, io::Error>;
+
+So ``io::Result<()>`` expands to ``Result<(), io::Error>``:
+
+- ``Ok(())`` — success, no return value (like ``void`` in C++)
+- ``Err(io::Error)`` — failure, holds an I/O error
+
+.. code-block:: rust
+
+    use std::fs;
+    use std::io;
+
+    fn load(path: &str) -> io::Result<()> {
+        let data = fs::read(path)?;  // could fail → io::Error
+        println!("read {} bytes", data.len());
+        Ok(())  // success, nothing to return
+    }
+
 See Also
 --------
 

@@ -9,9 +9,7 @@ fn main() {
     let v: Vec<_> = vec![1, 2, 3];
     println!("v = {:?}", v);
 
-    let m: HashMap<_, _> = vec![
-        ("key".to_string(), 1),
-    ].into_iter().collect();
+    let m: HashMap<_, _> = vec![("key".to_string(), 1)].into_iter().collect();
     println!("m = {:?}", m);
 
     let squares: Vec<_> = (0..5).map(|x| x * x).collect();
@@ -40,9 +38,7 @@ mod tests {
         let v: Vec<_> = vec![1, 2, 3];
         assert_eq!(v, vec![1, 2, 3]);
 
-        let m: HashMap<_, _> = vec![
-            ("a".to_string(), 1),
-        ].into_iter().collect();
+        let m: HashMap<_, _> = vec![("a".to_string(), 1)].into_iter().collect();
         assert_eq!(m["a"], 1);
 
         let squares: Vec<_> = (0..5).map(|x| x * x).collect();
@@ -64,7 +60,11 @@ mod tests {
 
     #[test]
     fn test_ignore_struct_fields() {
-        struct Point { x: i32, _y: i32, _z: i32 }
+        struct Point {
+            x: i32,
+            _y: i32,
+            _z: i32,
+        }
         let p = Point { x: 1, _y: 2, _z: 3 };
         let Point { x, .. } = p;
         assert_eq!(x, 1);
