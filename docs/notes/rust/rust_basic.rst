@@ -485,6 +485,122 @@ So ``io::Result<()>`` expands to ``Result<(), io::Error>``:
         Ok(())  // success, nothing to return
     }
 
+Struct Mutability
+-----------------
+
+In Rust, mutability is a property of the **binding**, not individual fields. You cannot
+make some fields mutable and others immutable — the entire struct is either mutable or
+immutable based on how the variable is declared.
+
+**C++ (per-field mutability):**
+
+.. code-block:: cpp
+
+    struct Foo {
+        int x;                 // mutable
+        const int y;           // immutable per-field
+        mutable int z;         // always mutable, even on const instance
+    };
+
+    const Foo foo{1, 2, 3};
+    // foo.x = 10;        // error: foo is const
+    foo.z = 42;           // OK: mutable member
+
+**Rust (whole-struct mutability):**
+
+.. code-block:: rust
+
+    struct Foo {
+        x: i32,
+        y: i32,
+        z: i32,
+    }
+
+    let foo = Foo { x: 1, y: 2, z: 3 };  // immutable - ALL fields
+    // foo.x = 10;                         // error: cannot mutate
+
+    let mut foo = Foo { x: 1, y: 2, z: 3 };  // mutable - ALL fields
+    foo.x = 10;                                // OK
+    foo.y = 20;                                // OK
+
+Nested Struct Mutability
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a struct contains another struct, the nested struct inherits the mutability of
+the parent binding. If the parent is ``mut``, all nested fields are mutable too.
+
+.. code-block:: rust
+
+    struct Bar {
+        val: i32,
+    }
+
+    struct Foo {
+        bar: Bar,
+    }
+
+    let mut foo = Foo { bar: Bar { val: 1 } };
+    foo.bar.val = 10;          // OK - parent is mut, so nested fields are mut
+
+    let foo2 = Foo { bar: Bar { val: 1 } };
+    // foo2.bar.val = 10;      // error: entire tree is immutable
+
+Interior Mutability
+~~~~~~~~~~~~~~~~~~~
+
+When you need to mutate data behind an immutable reference, Rust provides **interior
+mutability** types that move the borrow check to runtime:
+
+.. code-block:: rust
+
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    struct Foo {
+        val: Rc<RefCell<i32>>,   // shared ownership + interior mutability
+    }
+
+    let foo = Foo { val: Rc::new(RefCell::new(1)) };
+    *foo.val.borrow_mut() = 42;  // mutate through immutable binding
+
+For thread-safe interior mutability, use ``Arc<Mutex<T>>``:
+
+.. code-block:: rust
+
+    use std::sync::{Arc, Mutex};
+
+    let data = Arc::new(Mutex::new(0));
+    let data2 = Arc::clone(&data);
+
+    // Mutate from any thread holding a clone
+    *data2.lock().unwrap() = 42;
+
+Summary table:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Pattern
+     - Ownership
+     - Thread-safe
+     - Check
+   * - ``&mut T``
+     - single owner
+     - N/A
+     - compile-time
+   * - ``RefCell<T>``
+     - single owner
+     - No
+     - runtime
+   * - ``Rc<RefCell<T>>``
+     - multiple owners
+     - No
+     - runtime
+   * - ``Arc<Mutex<T>>``
+     - multiple owners
+     - Yes
+     - runtime
+
 See Also
 --------
 
