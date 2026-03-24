@@ -25,6 +25,7 @@ working examples.
    rust_container
    rust_iterator
    rust_traits
+   rust_polymorphism
    rust_casting
    rust_constfn
    rust_closure

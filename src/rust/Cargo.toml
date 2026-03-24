@@ -24,4 +24,5 @@ members = [
     "lifetimes",
     "underscore",
     "proc_macros",
+    "polymorphism",
 ]

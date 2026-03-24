@@ -134,6 +134,7 @@ smart pointers, and concurrency.
 - `Collections <docs/notes/rust/rust_container.rst>`_
 - `Iterators <docs/notes/rust/rust_iterator.rst>`_
 - `Traits & Generics <docs/notes/rust/rust_traits.rst>`_
+- `Polymorphism <docs/notes/rust/rust_polymorphism.rst>`_
 - `Casting <docs/notes/rust/rust_casting.rst>`_
 - `Const Functions <docs/notes/rust/rust_constfn.rst>`_
 - `Closures <docs/notes/rust/rust_closure.rst>`_
