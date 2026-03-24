@@ -630,9 +630,11 @@ never dangle.
    * - ``T*``
      - ``*mut T``
      - Raw mutable pointer, requires ``unsafe``
-   * - ``T&&`` (rvalue ref)
+   * - ``T&&`` (rvalue ref / forwarding ref)
      - *(no equivalent)*
-     - Rust uses move semantics by default
+     - Rust moves by default; ``T&&`` in a template context is a forwarding
+       (universal) reference — Rust doesn't need this since ownership transfer
+       is the default
 
 **C++:**
 
