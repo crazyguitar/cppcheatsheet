@@ -601,8 +601,254 @@ Summary table:
      - Yes
      - runtime
 
+Pointers and References
+-----------------------
+
+:Source: `src/rust/borrowing <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/borrowing>`_,
+   `src/rust/lifetimes <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/lifetimes>`_
+
+C++ has pointers (``T*``) and references (``T&``, ``T&&``). Rust splits these into
+safe references (``&T``, ``&mut T``) and unsafe raw pointers (``*const T``, ``*mut T``).
+The key difference: Rust references are always valid — the compiler guarantees they
+never dangle.
+
+.. list-table::
+   :header-rows: 1
+
+   * - C++
+     - Rust
+     - Notes
+   * - ``const T&``
+     - ``&T``
+     - Shared (immutable) reference
+   * - ``T&``
+     - ``&mut T``
+     - Exclusive (mutable) reference
+   * - ``const T*``
+     - ``*const T``
+     - Raw pointer, requires ``unsafe``
+   * - ``T*``
+     - ``*mut T``
+     - Raw mutable pointer, requires ``unsafe``
+   * - ``T&&`` (rvalue ref)
+     - *(no equivalent)*
+     - Rust uses move semantics by default
+
+**C++:**
+
+.. code-block:: cpp
+
+    void increment(int& x) { x += 1; }       // mutable ref
+    void print(const int& x) { cout << x; }  // immutable ref
+
+    struct Config {
+      const std::string& name;  // reference member — no lifetime check!
+      int value;
+
+      void print() const {
+        std::cout << name << "=" << value << "\n";
+      }
+    };
+
+    int main() {
+      int val = 5;
+      increment(val);
+      print(val);
+
+      // BUG: reference member can easily dangle
+      Config* c;
+      {
+        std::string s = "timeout";
+        c = new Config{s, 30};
+      } // s destroyed — c->name is now dangling!
+      c->print();  // undefined behavior
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    fn increment(x: &mut i32) { *x += 1; }   // exclusive reference
+    fn print_val(x: &i32) { println!("{x}"); } // shared reference
+
+    // Struct holding a reference MUST declare a lifetime parameter.
+    // This tells the compiler: Config cannot outlive the data it borrows.
+    struct Config<'a> {
+        name: &'a str,
+        value: i32,
+    }
+
+    impl<'a> Config<'a> {
+        fn new(name: &'a str, value: i32) -> Self {
+            Config { name, value }
+        }
+
+        // Accessing members — return lifetime tied to struct's lifetime
+        fn name(&self) -> &str { self.name }
+
+        fn display(&self) {
+            println!("{}={}", self.name, self.value);
+        }
+    }
+
+    fn main() {
+        let mut val = 5;
+        increment(&mut val);
+        print_val(&val);
+
+        // Compiler ensures Config cannot outlive the borrowed string
+        let name = String::from("timeout");
+        let cfg = Config::new(&name, 30);
+        cfg.display();  // timeout=30
+
+        // This would NOT compile — Rust prevents the dangling reference:
+        // let cfg;
+        // {
+        //     let name = String::from("timeout");
+        //     cfg = Config::new(&name, 30);
+        // } // name dropped here
+        // cfg.display();  // error: `name` does not live long enough
+    }
+
+Borrowing rules (enforced at compile time):
+
+- You can have **many** ``&T`` OR **one** ``&mut T`` — never both at the same time
+- References must always be valid (no dangling)
+
+Dereferencing and Auto-deref
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For primitives, you must explicitly dereference with ``*``. But for struct member
+access, Rust's ``.`` operator auto-dereferences — no ``->`` operator like C++:
+
+**C++:**
+
+.. code-block:: cpp
+
+    struct Point { int x, y; };
+
+    Point p{1, 2};
+    Point& r = p;
+    Point* ptr = &p;
+
+    r.x;      // dot for references
+    ptr->x;   // arrow for pointers
+    (*ptr).x; // or explicit deref + dot
+
+**Rust:**
+
+.. code-block:: rust
+
+    struct Point { x: i32, y: i32 }
+
+    let p = Point { x: 1, y: 2 };
+    let r = &p;
+    let b = Box::new(Point { x: 3, y: 4 });
+
+    r.x;       // auto-deref: same as (*r).x
+    b.x;       // auto-deref through Box too
+    // No -> operator in Rust — dot handles everything
+
+    // Explicit * only needed for primitives
+    let mut val = 5;
+    let m = &mut val;
+    *m += 1;   // must deref to assign to i32
+
+Lifetimes
+~~~~~~~~~
+
+When a struct holds a reference or a function returns one, Rust needs to know how
+long it's valid. In C++, this is entirely the programmer's responsibility (and a
+common source of bugs). Rust makes it explicit with lifetime annotations ``'a``.
+
+**C++ (dangling reference — compiles, crashes at runtime):**
+
+.. code-block:: cpp
+
+    struct Parser {
+      const std::string& input;  // no lifetime tracking
+
+      // Can easily outlive the string it references
+      std::string_view next_token() const {
+        return std::string_view(input).substr(0, input.find(' '));
+      }
+    };
+
+**Rust (lifetime annotation — compiler enforces validity):**
+
+.. code-block:: rust
+
+    struct Parser<'a> {
+        input: &'a str,  // 'a = "input must live at least as long as Parser"
+    }
+
+    impl<'a> Parser<'a> {
+        fn new(input: &'a str) -> Self {
+            Parser { input }
+        }
+
+        // Return type borrows from self, which borrows from 'a
+        fn next_token(&self) -> &str {
+            self.input.split_whitespace().next().unwrap_or("")
+        }
+    }
+
+    let text = String::from("hello world");
+    let parser = Parser::new(&text);
+    println!("{}", parser.next_token());  // "hello"
+
+    // Won't compile — parser cannot outlive text:
+    // let parser;
+    // {
+    //     let text = String::from("hello world");
+    //     parser = Parser::new(&text);
+    // }
+    // parser.next_token();  // error: `text` does not live long enough
+
+Multiple lifetimes — when a struct borrows from different sources:
+
+.. code-block:: rust
+
+    // 'a and 'b can be different lifetimes
+    struct Pair<'a, 'b> {
+        key: &'a str,
+        value: &'b str,
+    }
+
+    impl<'a, 'b> Pair<'a, 'b> {
+        fn key(&self) -> &'a str { self.key }
+        fn value(&self) -> &'b str { self.value }
+    }
+
+When you don't need lifetime annotations (lifetime elision rules):
+
+.. code-block:: rust
+
+    // Compiler infers: input and output have the same lifetime
+    fn first_word(s: &str) -> &str {
+        s.split_whitespace().next().unwrap_or("")
+    }
+
+    // Methods on &self — return lifetime tied to self automatically
+    impl<'a> Parser<'a> {
+        fn peek(&self) -> &str {  // no annotation needed
+            self.input
+        }
+    }
+
+``'static`` is a special lifetime meaning "valid for the entire program":
+
+.. code-block:: rust
+
+    // String literals are always &'static str
+    let s: &'static str = "I live forever";
+
+    // Struct can hold 'static references without lifetime parameter issues
+    let cfg = Config::new("timeout", 30);  // &'static str, always valid
+
 See Also
 --------
 
+- :doc:`rust_ownership` - Ownership, borrowing rules, and borrow checker
 - :doc:`rust_raii` - Resource management and Drop trait
 - :doc:`rust_smartptr` - Box, Rc, Arc, RefCell
