@@ -2,7 +2,10 @@
 resolver = "2"
 members = [
     "hello",
+    "types",
     "variables",
+    "control_flow",
+    "pattern_matching",
     "borrowing",
     "ownership",
     "structs",

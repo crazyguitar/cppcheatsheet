@@ -3,15 +3,128 @@ Rust Basics
 ===========
 
 .. meta::
-   :description: Rust basics for C++ developers covering variables, mutability, ownership, borrowing, and references with side-by-side C++ comparisons.
-   :keywords: Rust, C++, variables, mutability, ownership, borrowing, references, move semantics, let, mut
+   :description: Rust basics for C++ developers covering built-in types, variables, mutability, control flow, pattern matching, ownership, borrowing, and references with side-by-side C++ comparisons and code examples.
+   :keywords: Rust, C++, variables, mutability, ownership, borrowing, references, move semantics, let, mut, match, enum, pattern matching, i32, f64, control flow, if expression, loop
 
 .. contents:: Table of Contents
     :backlinks: none
 
-This chapter covers fundamental Rust concepts that differ most from C++: immutability
-by default, ownership, and borrowing. Understanding these concepts is essential for
-writing idiomatic Rust code.
+This chapter covers fundamental Rust concepts that differ most from C++: built-in
+types, immutability by default, control flow as expressions, pattern matching,
+ownership, and borrowing. Understanding these concepts is essential for writing
+idiomatic Rust code.
+
+Built-in Types
+--------------
+
+:Source: `src/rust/types <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/types>`_
+
+Rust's primitive types are explicit about size and signedness, unlike C/C++ where
+``int`` size is platform-dependent. Rust has no implicit numeric conversions — all
+casts must be explicit with ``as``.
+
+.. list-table::
+   :header-rows: 1
+
+   * - C/C++
+     - Rust
+     - Size
+   * - ``int8_t`` / ``signed char``
+     - ``i8``
+     - 1 byte
+   * - ``uint8_t`` / ``unsigned char``
+     - ``u8``
+     - 1 byte
+   * - ``int16_t`` / ``short``
+     - ``i16``
+     - 2 bytes
+   * - ``uint16_t`` / ``unsigned short``
+     - ``u16``
+     - 2 bytes
+   * - ``int32_t`` / ``int``
+     - ``i32``
+     - 4 bytes
+   * - ``uint32_t`` / ``unsigned``
+     - ``u32``
+     - 4 bytes
+   * - ``int64_t`` / ``long long``
+     - ``i64``
+     - 8 bytes
+   * - ``uint64_t`` / ``unsigned long long``
+     - ``u64``
+     - 8 bytes
+   * - ``float``
+     - ``f32``
+     - 4 bytes
+   * - ``double``
+     - ``f64``
+     - 8 bytes
+   * - ``bool``
+     - ``bool``
+     - 1 byte
+   * - ``char`` (1 byte)
+     - ``char`` (4 bytes, Unicode scalar)
+     - 4 bytes
+   * - ``size_t``
+     - ``usize``
+     - pointer-sized
+   * - ``ptrdiff_t`` / ``ssize_t``
+     - ``isize``
+     - pointer-sized
+
+Rust permits ``_`` as a visual separator in numeric literals (like C++14 digit
+separators ``'``), and supports type suffixes to specify the type inline:
+
+**C++:**
+
+.. code-block:: cpp
+
+    #include <cstdint>
+
+    int32_t a = -42;
+    uint64_t b = 1'000'000;       // C++14 digit separator
+    uint8_t c = 0xFF;
+    double pi = 3.14159;
+    bool flag = true;
+
+**Rust:**
+
+.. code-block:: rust
+
+    let a: i32 = -42;
+    let b: u64 = 1_000_000;       // _ as digit separator
+    let c = 0xff_u8;               // type suffix
+    let pi: f64 = 3.14159;
+    let flag: bool = true;
+    let ch: char = '🦀';           // 4-byte Unicode scalar
+
+No Implicit Conversions
+~~~~~~~~~~~~~~~~~~~~~~~
+
+C++ silently converts between numeric types, which can cause subtle bugs. Rust
+requires explicit casts with ``as`` or safe conversions with ``From``/``Into``.
+
+**C++ (implicit conversion — compiles, may lose data):**
+
+.. code-block:: cpp
+
+    int x = 3.14;           // silently truncates to 3
+    unsigned u = -1;         // wraps to UINT_MAX
+    char c = 1000;           // implementation-defined
+
+**Rust (explicit conversion required):**
+
+.. code-block:: rust
+
+    let x = 3.14_f64 as i32;          // explicit truncation
+    // let u: u32 = -1_i32;           // error: mismatched types
+    let u: u32 = (-1_i32) as u32;     // explicit wrap
+
+    // Prefer From/Into for safe widening
+    let wide: u32 = 42_u8.into();     // safe, infallible
+
+    // TryFrom for fallible narrowing
+    let narrow: Result<u8, _> = 300_u16.try_into();  // Err
 
 Variables and Mutability
 ------------------------
@@ -178,6 +291,354 @@ Suppressing Unused Warnings
     Rust's ``_`` is **not** like ``any`` in TypeScript or ``Object`` in Java.
     It does not mean "any type." The compiler still determines a single concrete
     type at compile time — ``_`` simply means "infer this type for me from context."
+
+Printing and Formatting
+-----------------------
+
+Rust uses macros (``println!``, ``format!``, ``eprintln!``) for formatted output
+instead of ``printf`` or ``std::cout``. The ``{}`` placeholder uses the ``Display``
+trait, while ``{:?}`` uses the ``Debug`` trait.
+
+**C++:**
+
+.. code-block:: cpp
+
+    #include <iostream>
+    #include <vector>
+
+    int x = 42;
+    std::cout << "value: " << x << std::endl;
+
+    // No built-in debug print for containers
+    std::vector<int> v = {1, 2, 3};
+    // Must write custom loop or operator<<
+
+**Rust:**
+
+.. code-block:: rust
+
+    let x = 42;
+    println!("value: {}", x);          // Display trait
+    println!("value: {x}");            // inline variable (Rust 1.58+)
+
+    let v = vec![1, 2, 3];
+    println!("{:?}", v);               // Debug trait: [1, 2, 3]
+    println!("{:#?}", v);              // Pretty-print Debug
+
+    // eprintln! writes to stderr
+    eprintln!("error: {}", "something went wrong");
+
+    // format! returns a String instead of printing
+    let s = format!("x = {}, v = {:?}", x, v);
+
+.. note::
+
+    Most standard library types implement ``Debug``. For custom types, derive it
+    with ``#[derive(Debug)]``. The ``Display`` trait must be implemented manually
+    for custom formatting.
+
+Control Flow
+------------
+
+:Source: `src/rust/control_flow <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/control_flow>`_
+
+Rust's control flow constructs are expressions that return values, unlike C++ where
+``if``, ``for``, and ``while`` are statements. This enables a more functional style
+and eliminates the need for the ternary operator.
+
+``if`` as an Expression
+~~~~~~~~~~~~~~~~~~~~~~~
+
+In C++, ``if`` is a statement. To assign based on a condition, you use the ternary
+operator ``? :``. In Rust, ``if`` is an expression that returns a value directly.
+
+**C++:**
+
+.. code-block:: cpp
+
+    int x = 42;
+    const char* msg = (x == 42) ? "found it" : "nope";  // ternary
+    // or
+    std::string msg2;
+    if (x == 42) {
+        msg2 = "found it";
+    } else {
+        msg2 = "nope";
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    let x = 42;
+    let msg = if x == 42 { "found it" } else { "nope" };
+    println!("{}", msg);
+
+    // No ternary operator in Rust — if/else IS the ternary
+
+``loop`` with Break Values
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Rust's ``loop`` creates an infinite loop. Unlike C++ ``while(true)``, Rust's ``loop``
+can return a value via ``break``.
+
+**C++:**
+
+.. code-block:: cpp
+
+    int counter = 0;
+    int result;
+    while (true) {
+        counter++;
+        if (counter == 10) {
+            result = counter * 2;
+            break;
+        }
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    let mut counter = 0;
+    let result = loop {
+        counter += 1;
+        if counter == 10 {
+            break counter * 2;  // loop returns 20
+        }
+    };
+
+``for`` and Ranges
+~~~~~~~~~~~~~~~~~~
+
+Rust uses ranges (``0..n`` exclusive, ``0..=n`` inclusive) instead of C-style
+``for(int i=0; i<n; i++)``.
+
+**C++:**
+
+.. code-block:: cpp
+
+    for (int i = 0; i < 5; i++) {
+        std::cout << i << " ";
+    }
+    // range-based for (C++11)
+    std::vector<int> v = {1, 2, 3};
+    for (const auto& x : v) {
+        std::cout << x << " ";
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    for i in 0..5 {              // 0, 1, 2, 3, 4
+        print!("{} ", i);
+    }
+    for i in 0..=5 {             // 0, 1, 2, 3, 4, 5 (inclusive)
+        print!("{} ", i);
+    }
+    let v = vec![1, 2, 3];
+    for x in &v {
+        print!("{} ", x);
+    }
+
+Expression Blocks
+~~~~~~~~~~~~~~~~~
+
+In Rust, a block ``{}`` is an expression. The last expression (without a semicolon)
+becomes the block's value. This replaces many uses of temporary variables.
+
+**C++:**
+
+.. code-block:: cpp
+
+    // Must declare variable, then assign in separate steps
+    int val;
+    {
+        int a = 10;
+        int b = 32;
+        val = a + b;
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    let val = {
+        let a = 10;
+        let b = 32;
+        a + b  // no semicolon — this is the return value
+    };
+    // val == 42
+
+Functions also use this: the last expression is the return value (no ``return``
+keyword needed):
+
+.. code-block:: rust
+
+    fn is_answer(x: u32) -> bool {
+        x == 42  // no semicolon, no return keyword
+    }
+
+Enums and Pattern Matching
+--------------------------
+
+:Source: `src/rust/pattern_matching <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/pattern_matching>`_,
+   `src/rust/enums <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/rust/enums>`_
+
+Rust enums are discriminated unions (tagged unions) — each variant can carry different
+data. Combined with ``match``, they replace C++ class hierarchies, ``std::variant``,
+and ``switch`` statements with compile-time exhaustiveness checking.
+
+Enums with Data
+~~~~~~~~~~~~~~~~
+
+C++ enums are just named integers. Rust enums can carry data in each variant, like
+``std::variant`` but with exhaustive pattern matching and no ``std::get`` exceptions.
+
+**C++ (enum + variant):**
+
+.. code-block:: cpp
+
+    #include <variant>
+    #include <string>
+
+    enum class ShapeType { Circle, Rectangle };
+
+    // std::variant for tagged union
+    struct Circle { double radius; };
+    struct Rectangle { double w, h; };
+    using Shape = std::variant<Circle, Rectangle>;
+
+    double area(const Shape& s) {
+        return std::visit([](auto&& arg) -> double {
+            using T = std::decay_t<decltype(arg)>;
+            if constexpr (std::is_same_v<T, Circle>)
+                return 3.14159 * arg.radius * arg.radius;
+            else
+                return arg.w * arg.h;
+        }, s);
+    }
+
+**Rust (enum with data):**
+
+.. code-block:: rust
+
+    enum Shape {
+        Circle(f64),
+        Rectangle(f64, f64),
+        Triangle { base: f64, height: f64 },  // named fields
+    }
+
+    fn area(s: &Shape) -> f64 {
+        match s {
+            Shape::Circle(r) => std::f64::consts::PI * r * r,
+            Shape::Rectangle(w, h) => w * h,
+            Shape::Triangle { base, height } => 0.5 * base * height,
+        }
+    }
+
+``match`` Expression
+~~~~~~~~~~~~~~~~~~~~
+
+``match`` is Rust's equivalent of ``switch``, but it must be exhaustive (cover all
+cases) and can destructure, bind values, and use guards.
+
+**C++ (switch):**
+
+.. code-block:: cpp
+
+    int x = 42;
+    switch (x) {
+        case 0:  std::cout << "zero"; break;
+        case 42: std::cout << "answer"; break;
+        default: std::cout << "other"; break;
+    }
+    // Forgetting break causes fallthrough — a common bug
+
+**Rust (match):**
+
+.. code-block:: rust
+
+    let x = 42;
+    match x {
+        0 => println!("zero"),
+        42 => println!("answer"),
+        _ => println!("other"),       // _ is the wildcard
+    }
+    // No fallthrough. Must be exhaustive.
+
+    // match with ranges and guards
+    match x {
+        0..=41 => println!("too small"),
+        42 => println!("perfect"),
+        n if n > 100 => println!("{} is huge", n),  // guard
+        _ => println!("other"),
+    }
+
+    // match returns a value
+    let msg = match x {
+        42 => "the answer",
+        _ => "not the answer",
+    };
+
+``if let`` and ``matches!``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For matching a single pattern, ``if let`` is more concise than a full ``match``.
+The ``matches!`` macro returns a ``bool``.
+
+**C++:**
+
+.. code-block:: cpp
+
+    #include <optional>
+
+    std::optional<int> val = 42;
+    if (val.has_value()) {
+        std::cout << *val;
+    }
+
+**Rust:**
+
+.. code-block:: rust
+
+    let val = Some(42);
+
+    // if let — match one pattern
+    if let Some(x) = val {
+        println!("got {}", x);
+    }
+
+    // matches! macro — returns bool
+    let is_some = matches!(val, Some(_));
+    let is_42 = matches!(val, Some(42));
+
+Destructuring in ``match``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``match`` can destructure structs, tuples, and nested enums:
+
+**Rust:**
+
+.. code-block:: rust
+
+    struct Point { x: i32, y: i32 }
+
+    let p = Point { x: 0, y: 7 };
+    match p {
+        Point { x: 0, y } => println!("on y-axis at {}", y),
+        Point { x, y: 0 } => println!("on x-axis at {}", x),
+        Point { x, y } => println!("({}, {})", x, y),
+    }
+
+    // Slice patterns
+    let v = [1, 2, 3];
+    match v {
+        [1, rest @ ..] => println!("starts with 1, rest: {:?}", rest),
+        [.., 3] => println!("ends with 3"),
+        _ => println!("other"),
+    }
 
 Ownership
 ---------
