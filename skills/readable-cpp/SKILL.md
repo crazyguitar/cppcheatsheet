@@ -1,11 +1,11 @@
 ---
 name: readable-cpp
-description: Readable C/C++/Rust code rules inspired by The Art of Readable Code. Use when writing, reviewing, or refactoring C, C++, or Rust code. Enforces short functions, flat control flow, clear naming, readable structure, and idiomatic patterns.
+description: Readable C/C++/Rust/CUDA code rules inspired by The Art of Readable Code. Use when writing, reviewing, or refactoring C, C++, Rust, or CUDA code. Enforces short functions, flat control flow, clear naming, readable structure, and idiomatic patterns.
 ---
 
-# Readable C/C++/Rust Rules (/readable-cpp)
+# Readable C/C++/Rust/CUDA Rules (/readable-cpp)
 
-Apply these rules when writing, reviewing, or refactoring C, C++, or Rust code. Inspired by *The Art of Readable Code* by Dustin Boswell and Trevor Foucher.
+Apply these rules when writing, reviewing, or refactoring C, C++, Rust, or CUDA code. Inspired by *The Art of Readable Code* by Dustin Boswell and Trevor Foucher.
 
 **Core principle: Code should be easy to understand.** The time it takes someone else (or future you) to understand the code is the ultimate metric.
 
@@ -278,3 +278,280 @@ let names: Vec<_> = users.iter()
 - Use `pub(crate)` for crate-internal visibility instead of full `pub`.
 - Group related types and functions in modules — one concept per module.
 - Re-export key types at the crate root for ergonomic imports.
+
+---
+
+# CUDA-Specific Rules
+
+## 29. Name Kernels and Device Functions Clearly
+
+- Kernel names should describe **what** they compute, not that they're kernels: `reduce_sum` not `kernel1` or `myKernel`.
+- Use a consistent naming convention to distinguish execution spaces: e.g., `reduce_sum_kernel` for `__global__`, `warp_reduce` for `__device__` helpers.
+- Name grid/block dimension variables descriptively: `threads_per_block`, `num_blocks` not `tpb`, `nb`, or bare `256`.
+
+```cuda
+// Bad: opaque names, magic numbers
+__global__ void k1(float *a, float *b, int n) {
+    int i = blockIdx.x * 256 + threadIdx.x;
+    if (i < n) b[i] = a[i] * 2.0f;
+}
+k1<<<(n+255)/256, 256>>>(d_in, d_out, n);
+
+// Good: clear intent, named constants
+constexpr int THREADS_PER_BLOCK = 256;
+
+__global__ void scale_kernel(const float *input, float *output,
+                             float scale_factor, int num_elements) {
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < num_elements) {
+        output[idx] = input[idx] * scale_factor;
+    }
+}
+
+const int num_blocks = (num_elements + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+scale_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(d_input, d_output, 2.0f, num_elements);
+```
+
+## 30. Separate Host Logic from Device Logic
+
+- Keep **host orchestration** (memory allocation, transfers, kernel launches, synchronization) in separate functions from **device computation** (kernels and device helpers).
+- Don't mix `cudaMalloc`/`cudaMemcpy` with application logic — wrap them in RAII classes or helper functions.
+- Use a clear file organization: consider separating `.cu` kernel files from `.cpp` host logic files, or at minimum group host and device code into clearly labeled sections.
+
+```cpp
+// Good: RAII wrapper hides allocation/deallocation
+template <typename T>
+class DeviceBuffer {
+    T *ptr_ = nullptr;
+    size_t size_ = 0;
+public:
+    explicit DeviceBuffer(size_t count) : size_(count) {
+        check_cuda(cudaMalloc(&ptr_, count * sizeof(T)));
+    }
+    ~DeviceBuffer() { cudaFree(ptr_); }
+
+    DeviceBuffer(const DeviceBuffer&) = delete;
+    DeviceBuffer& operator=(const DeviceBuffer&) = delete;
+    DeviceBuffer(DeviceBuffer&& o) noexcept : ptr_(o.ptr_), size_(o.size_) { o.ptr_ = nullptr; }
+
+    T *get() { return ptr_; }
+    const T *get() const { return ptr_; }
+    size_t size() const { return size_; }
+
+    void copy_from_host(const T *host_data) {
+        check_cuda(cudaMemcpy(ptr_, host_data, size_ * sizeof(T), cudaMemcpyHostToDevice));
+    }
+    void copy_to_host(T *host_data) const {
+        check_cuda(cudaMemcpy(host_data, ptr_, size_ * sizeof(T), cudaMemcpyDeviceToHost));
+    }
+};
+```
+
+## 31. Always Check CUDA Errors
+
+- **Check every CUDA API call.** Silent failures are the #1 source of hard-to-debug CUDA issues.
+- Use a `check_cuda` macro or inline function — not raw `if` blocks after every call.
+- Check errors after kernel launches with `cudaGetLastError()` + `cudaDeviceSynchronize()` during development.
+- In release builds, at minimum check allocations and memcpy — these are the most likely to fail at runtime.
+
+```cuda
+// Good: concise, catches file/line info
+inline void check_cuda(cudaError_t err, const char *file, int line) {
+    if (err != cudaSuccess) {
+        fprintf(stderr, "CUDA error at %s:%d — %s\n",
+                file, line, cudaGetErrorString(err));
+        exit(EXIT_FAILURE);
+    }
+}
+#define check_cuda(err) check_cuda((err), __FILE__, __LINE__)
+
+// Usage
+check_cuda(cudaMalloc(&d_ptr, size));
+my_kernel<<<grid, block>>>(d_ptr, n);
+check_cuda(cudaGetLastError());
+check_cuda(cudaDeviceSynchronize());
+```
+
+## 32. Make Thread Indexing Obvious
+
+- Compute the global thread index **once** at the top of the kernel and store it in a clearly named variable.
+- Use **early return** for out-of-bounds threads — don't wrap the entire kernel body in an `if`.
+- For 2D/3D grids, name dimensions explicitly: `row`, `col`, `depth` — not `x`, `y`, `z`.
+
+```cuda
+// Bad: index computed inline, entire body wrapped
+__global__ void process(float *data, int width, int height) {
+    if (blockIdx.x * blockDim.x + threadIdx.x < width &&
+        blockIdx.y * blockDim.y + threadIdx.y < height) {
+        int idx = (blockIdx.y * blockDim.y + threadIdx.y) * width +
+                  (blockIdx.x * blockDim.x + threadIdx.x);
+        data[idx] = data[idx] * 2.0f;
+    }
+}
+
+// Good: named indices, early return
+__global__ void process(float *data, int width, int height) {
+    const int col = blockIdx.x * blockDim.x + threadIdx.x;
+    const int row = blockIdx.y * blockDim.y + threadIdx.y;
+    if (col >= width || row >= height) return;
+
+    const int idx = row * width + col;
+    data[idx] = data[idx] * 2.0f;
+}
+```
+
+## 33. Document Shared Memory Usage
+
+- Declare shared memory with a **descriptive name** that indicates what it holds: `shared_tile` not `smem` or `s`.
+- Add a brief comment explaining the **size** and **purpose** of shared memory when it's dynamically allocated (`extern __shared__`).
+- Keep the shared memory lifecycle short — load, sync, compute, sync — and make each phase visually distinct.
+
+```cuda
+// Good: clear phases, descriptive names
+__global__ void tiled_matmul_kernel(const float *A, const float *B,
+                                     float *C, int N) {
+    __shared__ float tile_A[TILE_SIZE][TILE_SIZE];
+    __shared__ float tile_B[TILE_SIZE][TILE_SIZE];
+
+    const int row = blockIdx.y * TILE_SIZE + threadIdx.y;
+    const int col = blockIdx.x * TILE_SIZE + threadIdx.x;
+    float accumulator = 0.0f;
+
+    for (int tile_idx = 0; tile_idx < N / TILE_SIZE; ++tile_idx) {
+        // Phase 1: Load tiles from global memory
+        tile_A[threadIdx.y][threadIdx.x] = A[row * N + tile_idx * TILE_SIZE + threadIdx.x];
+        tile_B[threadIdx.y][threadIdx.x] = B[(tile_idx * TILE_SIZE + threadIdx.y) * N + col];
+        __syncthreads();
+
+        // Phase 2: Compute partial dot product from tiles
+        for (int k = 0; k < TILE_SIZE; ++k) {
+            accumulator += tile_A[threadIdx.y][k] * tile_B[k][threadIdx.x];
+        }
+        __syncthreads();
+    }
+
+    C[row * N + col] = accumulator;
+}
+```
+
+## 34. Keep Kernels Short — Extract Device Helpers
+
+- Apply the same "one function, one task" rule to kernels. If a kernel does loading, computing, and reducing, extract `__device__` helper functions.
+- Use `__forceinline__ __device__` for small helpers that you want inlined without relying on compiler heuristics.
+- This makes kernels easier to read, test (via unit-testing device functions), and reuse.
+
+```cuda
+// Good: kernel reads like pseudocode, details in helpers
+__forceinline__ __device__
+float warp_reduce_sum(float val) {
+    for (int offset = warpSize / 2; offset > 0; offset /= 2) {
+        val += __shfl_down_sync(0xffffffff, val, offset);
+    }
+    return val;
+}
+
+__forceinline__ __device__
+float block_reduce_sum(float val) {
+    __shared__ float warp_sums[32];
+    const int lane = threadIdx.x % warpSize;
+    const int warp_id = threadIdx.x / warpSize;
+
+    val = warp_reduce_sum(val);
+    if (lane == 0) warp_sums[warp_id] = val;
+    __syncthreads();
+
+    val = (threadIdx.x < blockDim.x / warpSize) ? warp_sums[lane] : 0.0f;
+    if (warp_id == 0) val = warp_reduce_sum(val);
+    return val;
+}
+
+__global__ void reduce_sum_kernel(const float *input, float *output, int n) {
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    const float val = (idx < n) ? input[idx] : 0.0f;
+
+    const float block_sum = block_reduce_sum(val);
+    if (threadIdx.x == 0) atomicAdd(output, block_sum);
+}
+```
+
+## 35. Be Explicit About Memory Spaces
+
+- Use `const` on kernel parameters for read-only device pointers — documents intent and enables compiler optimizations.
+- Use `__restrict__` when pointers don't alias — but add a comment explaining the non-aliasing guarantee.
+- When using unified memory (`cudaMallocManaged`), comment the expected access pattern (host-only init, device-only compute, etc.) — the implicit page migration behavior is not obvious.
+- Prefer explicit memory copies over unified memory in performance-critical paths — be explicit about data movement.
+
+```cuda
+// Good: const + restrict with clear intent
+__global__ void vector_add_kernel(
+    const float *__restrict__ a,   // read-only, no alias with output
+    const float *__restrict__ b,   // read-only, no alias with output
+    float *__restrict__ output,    // write-only
+    int num_elements)
+{
+    const int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx >= num_elements) return;
+    output[idx] = a[idx] + b[idx];
+}
+```
+
+## 36. Synchronization: Make It Visible and Minimal
+
+- Place `__syncthreads()` on its own line, never buried inside a conditional branch that not all threads take — this is **undefined behavior** and hard to spot.
+- Add a brief comment before each `__syncthreads()` stating what invariant it establishes: "all threads have loaded their tile", "partial sums are written to shared memory".
+- Minimize synchronization points — restructure algorithms to reduce the number of barriers.
+- For warp-level operations, prefer warp intrinsics (`__shfl_sync`, `__ballot_sync`) with explicit masks over `__syncthreads()`.
+
+## 37. Launch Configuration: Make It Readable
+
+- Wrap kernel launches in a **host function** that computes and names the launch parameters.
+- Never hardcode grid/block dimensions at the call site — compute them from the problem size.
+- For complex launch configurations, use a struct or helper to make the 2D/3D grid/block shape clear.
+- Query device properties at startup rather than assuming specific hardware limits.
+
+```cuda
+// Bad: magic numbers, unclear intent
+foo<<<(n+127)/128, 128, 0, stream>>>(d_ptr, n);
+
+// Good: named, computed, self-documenting
+void launch_scale_kernel(float *d_data, float factor, int n, cudaStream_t stream) {
+    constexpr int BLOCK_SIZE = 256;
+    const int grid_size = (n + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    scale_kernel<<<grid_size, BLOCK_SIZE, 0, stream>>>(d_data, factor, n);
+    check_cuda(cudaGetLastError());
+}
+```
+
+## 38. Streams and Async: Comment the Dependency Graph
+
+- When using multiple CUDA streams, add a comment block showing the **dependency graph** — which operations must complete before others begin.
+- Name streams after their purpose: `compute_stream`, `transfer_stream` — not `s1`, `s2`.
+- Group related async operations visually and separate independent pipelines with blank lines.
+- Always synchronize before reading results on the host — make the sync point explicit and commented.
+
+```cuda
+// Good: dependency graph documented, streams named by purpose
+// Dependency graph:
+//   upload (transfer_stream) --> compute (compute_stream) --> download (transfer_stream)
+//   Event 'upload_done' gates compute start.
+//   Event 'compute_done' gates download start.
+
+cudaStream_t transfer_stream, compute_stream;
+cudaEvent_t upload_done, compute_done;
+
+// Stage 1: async upload
+cudaMemcpyAsync(d_input, h_input, size, cudaMemcpyHostToDevice, transfer_stream);
+cudaEventRecord(upload_done, transfer_stream);
+
+// Stage 2: compute waits for upload
+cudaStreamWaitEvent(compute_stream, upload_done);
+process_kernel<<<grid, block, 0, compute_stream>>>(d_input, d_output, n);
+cudaEventRecord(compute_done, compute_stream);
+
+// Stage 3: download waits for compute
+cudaStreamWaitEvent(transfer_stream, compute_done);
+cudaMemcpyAsync(h_output, d_output, size, cudaMemcpyDeviceToHost, transfer_stream);
+
+// Sync before host reads the result
+cudaStreamSynchronize(transfer_stream);
+```
