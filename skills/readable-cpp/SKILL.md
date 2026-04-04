@@ -127,11 +127,50 @@ if (!is_eligible) {
 - Comment **surprising behavior** or non-obvious decisions — things where a reader would ask "why?".
 - **Don't comment bad code — rewrite it.** If you need a comment to explain what a block does, extract it into a well-named function instead.
 
+## 14. Design Code to Survive Auto-Formatting
+
+- Write code that looks good **after** the auto-formatter runs. If a chained expression or repeated pattern would be broken across 4+ lines by the formatter, extract a helper function instead.
+- **Prefer one-line helper calls** over long inline chains that the formatter will expand vertically.
+- The formatter is your reader's first impression. Run it *before* committing — if the result looks ugly, that's a signal to refactor, not to disable the formatter.
+
+```rust
+// Bad: rustfmt expands this to 4 lines per field — noisy and repetitive
+fn from_dict(cfg: &Bound<'_, PyDict>) -> PyResult<Self> {
+    Ok(Self {
+        rom: cfg.get_item("rom")?.ok_or_else(|| missing("rom"))?.extract()?,
+        // ... each field becomes 4 lines after rustfmt
+    })
+}
+
+// Good: extract a helper so each field stays one clean line
+fn get_required<T: FromPyObject>(cfg: &Bound<'_, PyDict>, key: &str) -> PyResult<T> {
+    cfg.get_item(key)?
+        .ok_or_else(|| PyKeyError::new_err(key.to_string()))?
+        .extract()
+}
+
+fn from_dict(cfg: &Bound<'_, PyDict>) -> PyResult<Self> {
+    Ok(Self {
+        rom: get_required(cfg, "rom")?,
+        actions: get_required(cfg, "actions")?,
+    })
+}
+```
+
+```cpp
+// Bad: clang-format wraps this into a hard-to-scan block
+auto result = container.find(key)->second.get_value().transform(func).value_or(default_val);
+
+// Good: name the intermediate step
+auto& entry = container.find(key)->second;
+auto result = entry.get_value().transform(func).value_or(default_val);
+```
+
 ---
 
 # C-Specific Rules
 
-## 14. RAII-Like Patterns with goto Cleanup
+## 15. RAII-Like Patterns with goto Cleanup
 
 - In C, use the **goto cleanup pattern** for resource management — allocate at the top, clean up at a single labeled block at the bottom.
 - Never scatter `free()` calls across multiple return paths. A single cleanup section is easier to audit.
@@ -158,19 +197,19 @@ cleanup_file:
 }
 ```
 
-## 15. Use `const` Liberally
+## 16. Use `const` Liberally
 
 - Mark pointers `const` when the function doesn't modify the pointed-to data: `const char *msg`.
 - Mark local variables `const` when they don't change after initialization.
 - This documents intent and helps the compiler catch mistakes.
 
-## 16. Prefer Sized Types for Data Structures
+## 17. Prefer Sized Types for Data Structures
 
 - Use `<stdint.h>` types (`uint32_t`, `int64_t`) for data that crosses boundaries (files, network, hardware).
 - Use `size_t` for sizes and counts, `ptrdiff_t` for pointer differences.
 - Use `int` and `unsigned` for simple loop counters and local arithmetic.
 
-## 17. Defensive Macro Hygiene
+## 18. Defensive Macro Hygiene
 
 - Wrap macro bodies in `do { ... } while(0)` for statement-like macros.
 - Parenthesize all macro parameters: `#define SQUARE(x) ((x) * (x))`.
@@ -181,21 +220,21 @@ cleanup_file:
 
 # C++-Specific Rules
 
-## 18. Use RAII for All Resources
+## 19. Use RAII for All Resources
 
 - Every resource (memory, file handles, locks, sockets) should be owned by an RAII object.
 - Use `std::unique_ptr` for exclusive ownership, `std::shared_ptr` only when shared ownership is genuinely needed.
 - Write custom RAII wrappers for non-standard resources (e.g., C library handles).
 - Never use raw `new`/`delete` in application code — let smart pointers and containers handle it.
 
-## 19. Prefer Value Semantics and Move
+## 20. Prefer Value Semantics and Move
 
 - Pass small objects by value, large objects by `const&`.
 - Return objects by value — rely on RVO/NRVO and move semantics.
 - Implement move constructors/assignment for types that own resources.
 - Use `std::move` only when you truly want to transfer ownership — don't `std::move` from things you'll use again.
 
-## 20. Use Modern C++ Over C Idioms
+## 21. Use Modern C++ Over C Idioms
 
 - Use `std::array` over C arrays, `std::string` over `char*`, `std::vector` over `malloc`/`realloc`.
 - Use `std::optional` over sentinel values, `std::variant` over type-unsafe unions.
@@ -203,21 +242,21 @@ cleanup_file:
 - Use structured bindings (C++17): `auto [key, value] = *map.begin();`.
 - Use `std::format` (C++20) or `fmt::format` over `sprintf` / string concatenation.
 
-## 21. Templates: Keep It Simple
+## 22. Templates: Keep It Simple
 
 - Use concepts (C++20) to constrain templates — errors become readable.
 - Prefer `if constexpr` over SFINAE when possible.
 - Don't write template metaprogramming unless the benefit is clear and the team can maintain it.
 - A non-template solution that's slightly less generic is often better than a template solution nobody understands.
 
-## 22. Use `constexpr` and `const` Aggressively
+## 23. Use `constexpr` and `const` Aggressively
 
 - Mark functions `constexpr` when they can be evaluated at compile time.
 - Use `constexpr` variables instead of `#define` for constants.
 - Use `const` on member functions that don't modify state.
 - `consteval` (C++20) for functions that *must* be compile-time evaluated.
 
-## 23. Error Handling: Pick One Pattern
+## 24. Error Handling: Pick One Pattern
 
 - Use exceptions for truly exceptional conditions, `std::expected` (C++23) or `std::optional` for expected failures.
 - Don't mix error codes and exceptions in the same layer.
@@ -228,14 +267,14 @@ cleanup_file:
 
 # Rust-Specific Rules
 
-## 24. Embrace the Ownership Model
+## 25. Embrace the Ownership Model
 
 - Don't fight the borrow checker — redesign your data flow instead.
 - Prefer passing references (`&T`, `&mut T`) over cloning. Clone only when ownership transfer is genuinely needed.
 - Use lifetimes explicitly only when the compiler can't infer them — don't annotate unnecessarily.
 - Prefer `&str` over `String` in function parameters when you don't need ownership.
 
-## 25. Use Iterators and Combinators
+## 26. Use Iterators and Combinators
 
 - Prefer iterator chains (`.iter().filter().map().collect()`) over manual loops with indices.
 - Use `for item in &collection` instead of `for i in 0..collection.len()`.
@@ -258,21 +297,21 @@ let names: Vec<_> = users.iter()
     .collect();
 ```
 
-## 26. Use Enums and Pattern Matching
+## 27. Use Enums and Pattern Matching
 
 - Use `enum` with data variants instead of class hierarchies or tagged unions.
 - Use `match` exhaustively — the compiler ensures you handle all cases.
 - Use `if let` / `while let` for single-variant matching instead of full `match`.
 - Prefer `Result<T, E>` over panicking — make errors part of the type signature.
 
-## 27. Leverage the Type System
+## 28. Leverage the Type System
 
 - Use **newtype wrappers** (`struct UserId(u64)`) to prevent mixing up same-typed values.
 - Use `Option<T>` instead of sentinel values or null pointers.
 - Use `#[must_use]` on functions whose return values shouldn't be ignored.
 - Prefer `From`/`Into` traits for type conversions over manual conversion functions.
 
-## 28. Module Organization
+## 29. Module Organization
 
 - Keep `pub` surfaces small — expose only what's needed.
 - Use `pub(crate)` for crate-internal visibility instead of full `pub`.
@@ -283,7 +322,7 @@ let names: Vec<_> = users.iter()
 
 # CUDA-Specific Rules
 
-## 29. Name Kernels and Device Functions Clearly
+## 30. Name Kernels and Device Functions Clearly
 
 - Kernel names should describe **what** they compute, not that they're kernels: `reduce_sum` not `kernel1` or `myKernel`.
 - Use a consistent naming convention to distinguish execution spaces: e.g., `reduce_sum_kernel` for `__global__`, `warp_reduce` for `__device__` helpers.
@@ -312,7 +351,7 @@ const int num_blocks = (num_elements + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOC
 scale_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(d_input, d_output, 2.0f, num_elements);
 ```
 
-## 30. Separate Host Logic from Device Logic
+## 31. Separate Host Logic from Device Logic
 
 - Keep **host orchestration** (memory allocation, transfers, kernel launches, synchronization) in separate functions from **device computation** (kernels and device helpers).
 - Don't mix `cudaMalloc`/`cudaMemcpy` with application logic — wrap them in RAII classes or helper functions.
@@ -347,7 +386,7 @@ public:
 };
 ```
 
-## 31. Always Check CUDA Errors
+## 32. Always Check CUDA Errors
 
 - **Check every CUDA API call.** Silent failures are the #1 source of hard-to-debug CUDA issues.
 - Use a `check_cuda` macro or inline function — not raw `if` blocks after every call.
@@ -372,7 +411,7 @@ check_cuda(cudaGetLastError());
 check_cuda(cudaDeviceSynchronize());
 ```
 
-## 32. Make Thread Indexing Obvious
+## 33. Make Thread Indexing Obvious
 
 - Compute the global thread index **once** at the top of the kernel and store it in a clearly named variable.
 - Use **early return** for out-of-bounds threads — don't wrap the entire kernel body in an `if`.
@@ -400,7 +439,7 @@ __global__ void process(float *data, int width, int height) {
 }
 ```
 
-## 33. Document Shared Memory Usage
+## 34. Document Shared Memory Usage
 
 - Declare shared memory with a **descriptive name** that indicates what it holds: `shared_tile` not `smem` or `s`.
 - Add a brief comment explaining the **size** and **purpose** of shared memory when it's dynamically allocated (`extern __shared__`).
@@ -434,7 +473,7 @@ __global__ void tiled_matmul_kernel(const float *A, const float *B,
 }
 ```
 
-## 34. Keep Kernels Short — Extract Device Helpers
+## 35. Keep Kernels Short — Extract Device Helpers
 
 - Apply the same "one function, one task" rule to kernels. If a kernel does loading, computing, and reducing, extract `__device__` helper functions.
 - Use `__forceinline__ __device__` for small helpers that you want inlined without relying on compiler heuristics.
@@ -474,7 +513,7 @@ __global__ void reduce_sum_kernel(const float *input, float *output, int n) {
 }
 ```
 
-## 35. Be Explicit About Memory Spaces
+## 36. Be Explicit About Memory Spaces
 
 - Use `const` on kernel parameters for read-only device pointers — documents intent and enables compiler optimizations.
 - Use `__restrict__` when pointers don't alias — but add a comment explaining the non-aliasing guarantee.
@@ -495,14 +534,14 @@ __global__ void vector_add_kernel(
 }
 ```
 
-## 36. Synchronization: Make It Visible and Minimal
+## 37. Synchronization: Make It Visible and Minimal
 
 - Place `__syncthreads()` on its own line, never buried inside a conditional branch that not all threads take — this is **undefined behavior** and hard to spot.
 - Add a brief comment before each `__syncthreads()` stating what invariant it establishes: "all threads have loaded their tile", "partial sums are written to shared memory".
 - Minimize synchronization points — restructure algorithms to reduce the number of barriers.
 - For warp-level operations, prefer warp intrinsics (`__shfl_sync`, `__ballot_sync`) with explicit masks over `__syncthreads()`.
 
-## 37. Launch Configuration: Make It Readable
+## 38. Launch Configuration: Make It Readable
 
 - Wrap kernel launches in a **host function** that computes and names the launch parameters.
 - Never hardcode grid/block dimensions at the call site — compute them from the problem size.
@@ -522,7 +561,7 @@ void launch_scale_kernel(float *d_data, float factor, int n, cudaStream_t stream
 }
 ```
 
-## 38. Streams and Async: Comment the Dependency Graph
+## 39. Streams and Async: Comment the Dependency Graph
 
 - When using multiple CUDA streams, add a comment block showing the **dependency graph** — which operations must complete before others begin.
 - Name streams after their purpose: `compute_stream`, `transfer_stream` — not `s1`, `s2`.
