@@ -7,21 +7,39 @@ C/C++ Cheatsheet
 
 This cheatsheet provides a curated collection of C and C++ code snippets covering modern language standards, system programming, and development tools. From basic syntax to advanced features like coroutines, templates, and memory management, each example is designed to be clear, practical, and ready to use. All code is tested and compiles cleanly, so you can focus on learning and adapting rather than debugging reference material.
 
-/cpp Skill
-==========
+Plugin
+======
 
-This repository includes a comprehensive Claude Code skill that automatically provides C/C++ cheat sheet examples when you ask programming questions.
+**cppcheatsheet** is available as a Claude Code plugin. Once installed, Claude
+automatically uses the cheat sheets to answer C/C++ questions — just ask
+naturally and the skill triggers based on context.
 
-**Installation:**
+Installation
+------------
 
-.. code:: bash
+**As a Claude Code plugin (recommended):**
 
-    # Install globally for Claude Code
+.. code-block:: bash
+
+    # Step 1: Add the marketplace
+    claude plugin marketplace add crazyguitar/cppcheatsheet
+
+    # Step 2: Install the plugin
+    claude plugin install cppcheatsheet@cppcheatsheet
+
+**Local testing (single session only):**
+
+.. code-block:: bash
+
+    claude --plugin-dir /path/to/cppcheatsheet
+
+**Manual installation (requires cloning the repo):**
+
+.. code-block:: bash
+
+    git clone https://github.com/crazyguitar/cppcheatsheet.git
     mkdir -p ~/.claude/skills
-    cp -r skills ~/.claude/skills/cpp
-
-    # +The skill covers everything from basic syntax to advanced topics like
-    # GPU programming, system programming, debugging and so on.
+    cp -r cppcheatsheet/skills/cpp ~/.claude/skills/cpp
 
 Modern C Programming
 ====================
