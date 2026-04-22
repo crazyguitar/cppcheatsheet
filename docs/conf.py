@@ -44,10 +44,17 @@ extensions = [
 
 # -- Open Graph configuration ---------------------------------------------
 ogp_site_url = "https://cppcheatsheet.com/"
-ogp_site_name = "C++ Cheatsheet"
+ogp_site_name = "C/C++ Cheatsheet"
 ogp_image = "https://cppcheatsheet.com/_static/logo.png"
 ogp_description_length = 200
 ogp_type = "website"
+# Auto-generate a unique social preview image per page (title + description).
+# Requires `pip install sphinxext-opengraph[social_cards]`.
+ogp_social_cards = {
+    "enable": True,
+    "image": "_static/logo.png",
+    "site_url": "cppcheatsheet.com",
+}
 
 myst_enable_extensions = [
     "colon_fence",
@@ -137,6 +144,15 @@ todo_include_todos = True
 
 # -- Sitemap configuration ------------------------------------------------
 html_baseurl = 'https://cppcheatsheet.com/'
+# Default scheme prepends "{lang}/{version}/" which doesn't exist at the
+# deployed origin — every sitemap URL 404s. Emit flat URLs that match the
+# canonical tags instead.
+sitemap_url_scheme = "{link}"
+sitemap_excludes = [
+    "search.html",
+    "genindex.html",
+    "404.html",
+]
 
 
 # -- Options for HTML output ----------------------------------------------
@@ -171,9 +187,8 @@ html_context = {
 html_logo = "_static/logo.png"
 
 # The name of an image file (relative to this directory) to use as a favicon of
-# the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
-# pixels large.
-#html_favicon = None
+# the docs.  Browsers accept PNG; Google uses this for the SERP favicon.
+html_favicon = "_static/logo.png"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -186,9 +201,10 @@ html_css_files = ['style.css']
 # directly to the root of the documentation.
 html_extra_path = ['_extra']
 
-# If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
-# using the given strftime format.
-#html_last_updated_fmt = '%b %d, %Y'
+# Populates the `last_updated` Jinja variable used by the TechArticle JSON-LD
+# dateModified field — a freshness signal for Google. ISO format so it's both
+# human-readable in the footer and valid for schema.org.
+html_last_updated_fmt = '%Y-%m-%d'
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -216,8 +232,10 @@ html_sidebars = {
 # If true, the index is split into individual pages for each letter.
 #html_split_index = False
 
-# If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+# Don't ship copies of every .rst source as .txt under _sources/ — they are
+# low-value duplicates that crawlers still fetch. Also hide the sourcelink.
+html_copy_source = False
+html_show_sourcelink = False
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True
