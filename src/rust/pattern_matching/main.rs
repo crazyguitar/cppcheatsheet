@@ -25,7 +25,10 @@ fn main() {
     let shapes = vec![
         Shape::Circle(5.0),
         Shape::Rectangle(3.0, 4.0),
-        Shape::Triangle { base: 6.0, height: 3.0 },
+        Shape::Triangle {
+            base: 6.0,
+            height: 3.0,
+        },
     ];
     for s in &shapes {
         println!("area = {:.2}", area(s));

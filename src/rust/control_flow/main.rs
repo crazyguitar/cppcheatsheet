@@ -57,7 +57,9 @@ mod tests {
         let mut i = 0;
         let r = loop {
             i += 1;
-            if i == 5 { break i; }
+            if i == 5 {
+                break i;
+            }
         };
         assert_eq!(r, 5);
     }

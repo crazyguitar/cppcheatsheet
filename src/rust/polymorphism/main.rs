@@ -89,8 +89,12 @@ struct ClickCounter {
 }
 
 impl Counter for ClickCounter {
-    fn increment(&mut self) { self.clicks += 1; }
-    fn count(&self) -> u32 { self.clicks }
+    fn increment(&mut self) {
+        self.clicks += 1;
+    }
+    fn count(&self) -> u32 {
+        self.clicks
+    }
 }
 
 struct KeyCounter {
@@ -98,8 +102,12 @@ struct KeyCounter {
 }
 
 impl Counter for KeyCounter {
-    fn increment(&mut self) { self.presses += 1; }
-    fn count(&self) -> u32 { self.presses }
+    fn increment(&mut self) {
+        self.presses += 1;
+    }
+    fn count(&self) -> u32 {
+        self.presses
+    }
 }
 
 // ---- Rc<RefCell<Box<dyn Trait>>> — shared mutable trait object ----
@@ -162,10 +170,7 @@ fn main() {
     print_area_static(&c);
 
     // Enum-based dispatch
-    let animals = vec![
-        Animal::Dog("Rex".into()),
-        Animal::Cat("Whiskers".into()),
-    ];
+    let animals = vec![Animal::Dog("Rex".into()), Animal::Cat("Whiskers".into())];
     for a in &animals {
         println!("{} says {}", a.name(), a.speak());
     }
@@ -176,7 +181,10 @@ fn main() {
 
     // &dyn Trait references — no heap allocation
     let c2 = Circle { radius: 1.0 };
-    let r2 = Rectangle { width: 2.0, height: 3.0 };
+    let r2 = Rectangle {
+        width: 2.0,
+        height: 3.0,
+    };
     let refs: Vec<&dyn Shape> = vec![&c2, &r2];
     println!("total area = {:.2}", total_area(&refs));
 
@@ -193,9 +201,9 @@ fn main() {
     println!("click count = {}", counters[0].borrow().count()); // 2
 
     // Rc<RefCell<Box<dyn Trait>>> — shared ownership + interior mutability
-    let logger = create_logger();       // Rc<RefCell<Box<dyn Logger>>>
-    let writer = Rc::clone(&logger);   // same type, refcount = 2
-    let reader = Rc::clone(&logger);   // same type, refcount = 3
+    let logger = create_logger(); // Rc<RefCell<Box<dyn Logger>>>
+    let writer = Rc::clone(&logger); // same type, refcount = 2
+    let reader = Rc::clone(&logger); // same type, refcount = 3
 
     // All three are Rc<RefCell<Box<dyn Logger>>> pointing to the same object.
     // RefCell::borrow_mut() enables mutation through shared references.
@@ -251,7 +259,10 @@ mod tests {
     #[test]
     fn test_ref_trait_objects() {
         let c = Circle { radius: 1.0 };
-        let r = Rectangle { width: 2.0, height: 3.0 };
+        let r = Rectangle {
+            width: 2.0,
+            height: 3.0,
+        };
         let refs: Vec<&dyn Shape> = vec![&c, &r];
         let total = total_area(&refs);
         assert!((total - (std::f64::consts::PI + 6.0)).abs() < 1e-10);
@@ -259,8 +270,7 @@ mod tests {
 
     #[test]
     fn test_rc_refcell_dyn() {
-        let counter: Rc<RefCell<dyn Counter>> =
-            Rc::new(RefCell::new(ClickCounter { clicks: 0 }));
+        let counter: Rc<RefCell<dyn Counter>> = Rc::new(RefCell::new(ClickCounter { clicks: 0 }));
         let shared = Rc::clone(&counter);
 
         counter.borrow_mut().increment();
@@ -272,11 +282,11 @@ mod tests {
 
     #[test]
     fn test_rc_refcell_box_dyn() {
-        let logger = create_logger();       // Rc<RefCell<Box<dyn Logger>>>
-        let writer = Rc::clone(&logger);   // same type, refcount = 2
-        let reader = Rc::clone(&logger);   // same type, refcount = 3
+        let logger = create_logger(); // Rc<RefCell<Box<dyn Logger>>>
+        let writer = Rc::clone(&logger); // same type, refcount = 2
+        let reader = Rc::clone(&logger); // same type, refcount = 3
 
-        writer.borrow_mut().log("hello");  // RefCell gives &mut access at runtime
+        writer.borrow_mut().log("hello"); // RefCell gives &mut access at runtime
         reader.borrow_mut().log("world");
 
         assert_eq!(logger.borrow().entries().len(), 2);

@@ -26,7 +26,11 @@ def find_key(token):
 
 csp = {
     "default-src": "'none'",
-    "style-src": ["'self'", "'unsafe-inline'"],
+    "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "fonts.googleapis.com",
+    ],
     "script-src": [
         "'self'",
         "*.cloudflare.com",
@@ -46,7 +50,10 @@ csp = {
         "*.googletagmanager.com",
         "*.doubleclick.net",
     ],
-    "font-src": "'self'",
+    "font-src": [
+        "'self'",
+        "fonts.gstatic.com",
+    ],
     "form-action": "'self'",
     "base-uri": "'self'",
     "img-src": "*",
