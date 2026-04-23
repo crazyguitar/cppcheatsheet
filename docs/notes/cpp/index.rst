@@ -22,6 +22,7 @@ manipulation using STL containers and algorithms.
 
    cpp_basic
    cpp_raii
+   cpp_move
    cpp_string
    cpp_container
    cpp_iterator

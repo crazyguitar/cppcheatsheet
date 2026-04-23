@@ -557,6 +557,10 @@ to constructors, preserving value categories for efficient object creation:
 
     int main() { auto w = make<Widget>(42, 3.14); }
 
+See :doc:`cpp_move` for the related move semantics topics: special member
+functions, Rule of Zero/Three/Five, value categories, move-only types, and
+common move semantics pitfalls.
+
 Bit Manipulation with std::bitset
 ---------------------------------
 

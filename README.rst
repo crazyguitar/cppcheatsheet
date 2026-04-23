@@ -63,6 +63,7 @@ with coroutines.
 
 - `C++ Basics <docs/notes/cpp/cpp_basic.rst>`_
 - `Resource Management <docs/notes/cpp/cpp_raii.rst>`_
+- `Move Semantics <docs/notes/cpp/cpp_move.rst>`_
 - `String <docs/notes/cpp/cpp_string.rst>`_
 - `Container <docs/notes/cpp/cpp_container.rst>`_
 - `Iterator <docs/notes/cpp/cpp_iterator.rst>`_
