@@ -41,6 +41,16 @@ Installation
     mkdir -p ~/.claude/skills
     cp -r cppcheatsheet/skills/cpp ~/.claude/skills/cpp
 
+C/C++ Interview Cheatsheet
+==========================
+
+Curated C and C++ interview questions indexed by topic — each question links
+directly to the section of the cheat sheet that answers it. Use it for quick
+review before an interview, or to drill down on a specific area (RAII, move
+semantics, templates, concurrency, and more).
+
+- `C/C++ Interview Cheatsheet <docs/notes/interview/index.rst>`_
+
 Modern C Programming
 ====================
 

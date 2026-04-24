@@ -29,6 +29,7 @@ For local testing and manual installation, see the main `README <https://github.
 .. toctree::
    :maxdepth: 1
 
+   notes/interview/index
    notes/c/index
    notes/cpp/index
    notes/os/index
