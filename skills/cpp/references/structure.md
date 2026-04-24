@@ -1,5 +1,8 @@
 # C/C++ Topics Reference Map
 
+## C/C++ Interview Cheatsheet
+- [C/C++ Interview Cheatsheet](https://cppcheatsheet.com/notes/interview/index.html) - Curated interview questions, each deep-linked to the section that answers it
+
 ## Modern C Programming
 - [C Basics](https://cppcheatsheet.com/notes/c/c_basic.html) - Core C language features from C11 to C23
 - [Memory](https://cppcheatsheet.com/notes/c/c_memory.html) - Memory management and allocation

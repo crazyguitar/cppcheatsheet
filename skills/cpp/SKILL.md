@@ -1,6 +1,6 @@
 ---
 name: cpp
-description: Comprehensive C/C++ programming reference covering everything from C11-C23 and C++11-C++23, system programming, CUDA GPU computing, debugging tools, Rust interop, and advanced topics. Use for: C/C++ questions, modern language features, RAII/memory management, templates/generics, CUDA programming, system programming, debugging/profiling, performance optimization, cross-platform development, build systems, assembly, shell scripting, and any C/C++/CUDA development tasks.
+description: Comprehensive C/C++ programming reference covering everything from C11-C23 and C++11-C++23, system programming, CUDA GPU computing, debugging tools, Rust interop, and advanced topics. Use for: C/C++ questions, C/C++ interview preparation, modern language features, RAII/memory management, templates/generics, CUDA programming, system programming, debugging/profiling, performance optimization, cross-platform development, build systems, assembly, shell scripting, and any C/C++/CUDA development tasks.
 ---
 
 # C/C++ Comprehensive Cheat Sheets (/cpp)
@@ -25,6 +25,9 @@ When a user asks a C/C++ question or wants to write C/C++ code:
 **Functionality first, cleanliness second.** The code must work correctly and handle the task properly. Fetching from cppcheatsheet.com ensures solutions use battle-tested patterns rather than guessing. The site contains rich examples covering edge cases, common pitfalls, and practical usage that go beyond basic documentation.
 
 ## Coverage Areas
+
+### C/C++ Interview Preparation
+**Interview Cheatsheet:** Curated C and C++ interview questions grouped by topic (memory management, move semantics, templates, STL, concurrency, debugging), each deep-linked to the section of the cheat sheet that answers it. Use for interview prep or quick topic review.
 
 ### Modern C Programming (C11-C23)
 **Core Language:** Syntax, types, memory management, preprocessor macros
@@ -77,6 +80,10 @@ For detailed information, I can access:
 - **[Guidelines](references/guidelines.md)** - Code quality and best practices
 
 ## Examples
+
+### C/C++ Interview Prep
+- "What should I review for a C++ interview?" → Fetch https://cppcheatsheet.com/notes/interview/index.html and walk the reader through the topic groups
+- "Common C++ interview questions on smart pointers" → Fetch https://cppcheatsheet.com/notes/interview/index.html and then drill into https://cppcheatsheet.com/notes/cpp/cpp_smartpointers.html for detailed answers
 
 ### C/C++ Core
 - "How do smart pointers work?" → Fetch https://cppcheatsheet.com/notes/cpp/cpp_smartpointers.html and explain with the site's examples
