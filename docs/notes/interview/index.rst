@@ -19,10 +19,6 @@ Use it two ways:
 * **Quick review before an interview:** read the questions, and for any you
   cannot confidently answer in one or two sentences, click through.
 
-.. contents:: Topics
-    :local:
-    :depth: 1
-
 Memory & Resource Management
 ============================
 
