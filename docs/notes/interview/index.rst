@@ -98,6 +98,43 @@ Casting & Type Conversions
 * What does ``const_cast`` actually guarantee, and when is it undefined?
   :ref:`→ cpp/cpp_casting: const_cast <notes/cpp/cpp_casting:const_cast\: Removing or Adding const>`
 
+Polymorphism & Inheritance
+==========================
+
+* How does dynamic dispatch work — what are the vtable and vptr?
+  :ref:`→ cpp/cpp_polymorphism: The vtable and vptr <notes/cpp/cpp_polymorphism:The vtable and vptr>`
+* When does a base class need a ``virtual`` destructor, and what happens
+  without one?
+  :ref:`→ cpp/cpp_polymorphism: Virtual Destructors <notes/cpp/cpp_polymorphism:Virtual Destructors>`
+* Why should overriding functions be marked ``override``, and what does
+  ``final`` enable?
+  :ref:`→ cpp/cpp_polymorphism: override and final <notes/cpp/cpp_polymorphism:override and final>`
+* What happens if you call a virtual function from a constructor or
+  destructor?
+  :ref:`→ cpp/cpp_polymorphism: Construction and Destruction Order <notes/cpp/cpp_polymorphism:Construction and Destruction Order>`
+* What is object slicing, and how do you avoid it?
+  :ref:`→ cpp/cpp_polymorphism: The Slicing Problem <notes/cpp/cpp_polymorphism:The Slicing Problem>`
+* What is the diamond problem, and how does virtual inheritance solve it?
+  :ref:`→ cpp/cpp_polymorphism: The Diamond Problem and Virtual Inheritance <notes/cpp/cpp_polymorphism:The Diamond Problem and Virtual Inheritance>`
+* When should you reach for virtual functions vs. CRTP?
+  :ref:`→ cpp/cpp_polymorphism: Virtual vs. CRTP — When to Pick Which <notes/cpp/cpp_polymorphism:Virtual vs. CRTP — When to Pick Which>`
+* What are the three flavors of polymorphism in modern C++, and how does
+  trait-style (type-erased) polymorphism differ from inheritance-based
+  dispatch?
+  :ref:`→ cpp/cpp_type_erasure: Why Type Erasure <notes/cpp/cpp_type_erasure:Why Type Erasure>`
+* Walk through the Concept/Model pattern used to build a type-erased wrapper
+  like ``std::function``.
+  :ref:`→ cpp/cpp_type_erasure: The Concept / Model Pattern <notes/cpp/cpp_type_erasure:The Concept / Model Pattern>`
+* What is the small buffer optimization, and why does ``std::function``
+  use it?
+  :ref:`→ cpp/cpp_type_erasure: Small Buffer Optimization (SBO) <notes/cpp/cpp_type_erasure:Small Buffer Optimization (SBO)>`
+* Why can ``std::function`` not store a lambda that captures
+  ``std::unique_ptr``, and what fixes it in C++23?
+  :ref:`→ cpp/cpp_type_erasure: std::move_only_function (C++23) <notes/cpp/cpp_type_erasure:std\:\:move_only_function (C++23)>`
+* What is the cost of a virtual call, and when can the compiler devirtualize
+  it?
+  :ref:`→ cpp/cpp_polymorphism: Static vs. Dynamic Dispatch <notes/cpp/cpp_polymorphism:Static vs. Dynamic Dispatch>`
+
 Compile-Time Programming
 ========================
 

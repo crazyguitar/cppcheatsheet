@@ -28,6 +28,8 @@ manipulation using STL containers and algorithms.
    cpp_iterator
    cpp_template
    cpp_casting
+   cpp_polymorphism
+   cpp_type_erasure
    cpp_constexpr
    cpp_lambda
    cpp_concepts
