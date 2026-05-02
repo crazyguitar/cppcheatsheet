@@ -79,6 +79,8 @@ with coroutines.
 - `Iterator <docs/notes/cpp/cpp_iterator.rst>`_
 - `Template <docs/notes/cpp/cpp_template.rst>`_
 - `Casting <docs/notes/cpp/cpp_casting.rst>`_
+- `Polymorphism <docs/notes/cpp/cpp_polymorphism.rst>`_
+- `Type Erasure <docs/notes/cpp/cpp_type_erasure.rst>`_
 - `Constexpr <docs/notes/cpp/cpp_constexpr.rst>`_
 - `Lambda <docs/notes/cpp/cpp_lambda.rst>`_
 - `Concepts <docs/notes/cpp/cpp_concepts.rst>`_
