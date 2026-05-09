@@ -74,9 +74,7 @@ TEST(ConstructorFailure, SmartPointerMemberCleansUpOnThrow) {
 // rethrow or terminate — it cannot swallow the exception.
 class Reported {
  public:
-  Reported() try : handle_(std::make_unique<Handle>("reported")) {
-    throw std::runtime_error("post-init failure");
-  } catch (const std::exception&) {
+  Reported() try : handle_(std::make_unique<Handle>("reported")) { throw std::runtime_error("post-init failure"); } catch (const std::exception&) {
     // Members are already destroyed at this point; we cannot access handle_.
     // The exception is implicitly rethrown at the end of this block.
   }

@@ -42,7 +42,7 @@ class Raii {
 };
 
 TEST(TwoPhaseInit, PartlyConstructedObjectIsObservable) {
-  TwoPhase t;                       // constructed but unusable
+  TwoPhase t;  // constructed but unusable
   EXPECT_THROW((void)t.value(), std::logic_error);
   EXPECT_TRUE(t.init(42));
   EXPECT_EQ(t.value(), 42);
@@ -50,12 +50,12 @@ TEST(TwoPhaseInit, PartlyConstructedObjectIsObservable) {
 
 TEST(TwoPhaseInit, TwoPhaseAllowsInvalidInitInput) {
   TwoPhase t;
-  EXPECT_FALSE(t.init(-1));         // silent failure: t remains uninitialized
+  EXPECT_FALSE(t.init(-1));  // silent failure: t remains uninitialized
   EXPECT_THROW((void)t.value(), std::logic_error);
 }
 
 TEST(TwoPhaseInit, RaiiConstructionIsAllOrNothing) {
   EXPECT_THROW(Raii(-1), std::invalid_argument);
-  Raii r(42);                       // fully constructed or exception — never zombie
+  Raii r(42);  // fully constructed or exception — never zombie
   EXPECT_EQ(r.value(), 42);
 }

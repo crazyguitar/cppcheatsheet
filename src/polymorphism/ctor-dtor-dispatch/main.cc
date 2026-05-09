@@ -20,7 +20,9 @@ struct D : B {
 
 TEST(CtorDtorDispatch, ConstructorCallsBaseVersion) {
   std::vector<int> log;
-  { ctor_dispatch::D d{&log}; }
+  {
+    ctor_dispatch::D d{&log};
+  }
   // ctor logged 0 (B::f), then dtor logged 0 (B::f again).
   // D::f never runs from inside B's ctor or dtor.
   EXPECT_EQ(log, (std::vector<int>{0, 0}));

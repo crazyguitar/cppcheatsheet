@@ -49,6 +49,7 @@ std::unique_ptr<T> make(Args&&... args) {
 struct Widget {
   int x;
   double y;
+  Widget(int x_, double y_) : x(x_), y(y_) {}
 };
 
 TEST(PerfectForwarding, Factory) {

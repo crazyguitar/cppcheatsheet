@@ -26,8 +26,7 @@ class AnyDrawable {
 
   template <typename T>
   static const VTable* vtable_for() {
-    static constexpr bool fits = sizeof(T) <= kBuf && alignof(T) <= alignof(std::max_align_t) &&
-                                 std::is_nothrow_move_constructible_v<T>;
+    static constexpr bool fits = sizeof(T) <= kBuf && alignof(T) <= alignof(std::max_align_t) && std::is_nothrow_move_constructible_v<T>;
     if constexpr (fits) {
       static const VTable v{
           /*draw*/ [](const void* p) -> std::string { return static_cast<const T*>(p)->draw(); },
@@ -41,7 +40,8 @@ class AnyDrawable {
       static const VTable v{
           /*draw*/ [](const void* p) -> std::string { return (*static_cast<const T* const*>(p))->draw(); },
           /*copy*/ [](void* dst, const void* src) { *static_cast<T**>(dst) = new T(**static_cast<const T* const*>(src)); },
-          /*move*/ [](void* dst, void* src) noexcept {
+          /*move*/
+          [](void* dst, void* src) noexcept {
             *static_cast<T**>(dst) = *static_cast<T**>(src);
             *static_cast<T**>(src) = nullptr;
           },

@@ -68,8 +68,8 @@ TEST(ExceptionSafety, StrongGuaranteeViaCopyAndSwap) {
 TEST(ExceptionSafety, BasicGuaranteeKeepsInvariants) {
   Counter c(10);
   EXPECT_THROW(c.add(5, true), std::runtime_error);
-  EXPECT_EQ(c.value(), 10);          // value_ unchanged
-  EXPECT_EQ(c.log_size(), 1u);       // log_ grew — that's basic, not strong
+  EXPECT_EQ(c.value(), 10);     // value_ unchanged
+  EXPECT_EQ(c.log_size(), 1u);  // log_ grew — that's basic, not strong
 }
 
 TEST(ExceptionSafety, CopyAndSwapAssignmentReplacesState) {
@@ -79,8 +79,8 @@ TEST(ExceptionSafety, CopyAndSwapAssignmentReplacesState) {
   EXPECT_EQ(c.value(), 31);
 
   Counter replacement(100);
-  c = replacement;                   // copy-and-swap via operator=(Counter)
-  EXPECT_EQ(c.value(), 100);         // new state committed
-  EXPECT_EQ(c.log_size(), 0u);       // old log swapped out
+  c = replacement;                      // copy-and-swap via operator=(Counter)
+  EXPECT_EQ(c.value(), 100);            // new state committed
+  EXPECT_EQ(c.log_size(), 0u);          // old log swapped out
   EXPECT_EQ(replacement.value(), 100);  // source unchanged by copy
 }

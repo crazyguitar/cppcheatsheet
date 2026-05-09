@@ -30,7 +30,9 @@ TEST(VirtualDestructor, DerivedDestructorRunsThroughBasePointer) {
 TEST(VirtualDestructor, UniquePtrToBaseAlsoCallsDerivedDtor) {
   using namespace virtual_dtor;
   counter() = 0;
-  { std::unique_ptr<virtual_dtor::BaseV> p = std::make_unique<virtual_dtor::DerivedV>(); }
+  {
+    std::unique_ptr<virtual_dtor::BaseV> p = std::make_unique<virtual_dtor::DerivedV>();
+  }
   EXPECT_EQ(counter(), 1);
 }
 

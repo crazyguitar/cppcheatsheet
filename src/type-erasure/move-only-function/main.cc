@@ -28,8 +28,6 @@ TEST(MoveOnlyFunction, IsMovableButNotCopyable) {
 
 #else
 
-TEST(MoveOnlyFunction, NotAvailableInThisStdlib) {
-  GTEST_SKIP() << "std::move_only_function requires C++23 standard library support";
-}
+TEST(MoveOnlyFunction, NotAvailableInThisStdlib) { GTEST_SKIP() << "std::move_only_function requires C++23 standard library support"; }
 
 #endif
