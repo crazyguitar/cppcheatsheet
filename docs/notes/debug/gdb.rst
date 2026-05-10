@@ -295,6 +295,83 @@ Define custom commands in ``~/.gdbinit``:
       info locals
     end
 
+Dumping Debug Data to Log File
+-------------------------------
+
+Capture GDB output to a file for later analysis or sharing:
+
+.. code-block:: bash
+
+    # Attach to running process and dump backtrace
+    $ gdb -batch -p 110 -ex "set pagination off" -ex "thread apply all bt" | tee gdb.log
+
+    # Debug executable and log all output
+    $ gdb -batch -x commands.txt ./myprogram | tee gdb.log
+
+    # Inside GDB session
+    (gdb) set logging file output.log
+    (gdb) set logging on
+    (gdb) thread apply all bt
+    (gdb) set logging off
+
+The ``-batch`` flag runs GDB in non-interactive mode and exits after executing
+commands. The ``-ex`` flag executes a single command.
+
+For more complex debugging sessions, write commands to a file and run with
+``-x``. Use ``tee`` to display output while saving to a file:
+
+.. code-block:: bash
+
+    $ cat > /tmp/cuda_cmds.gdb <<'EOF'
+    set pagination off
+    set logging file /tmp/cuda_debug.log
+    set logging on
+
+    printf "=== CUDA KERNELS ===\n"
+    info cuda kernels
+    printf "\n=== CUDA BLOCKS (kernel 0) ===\n"
+    info cuda blocks
+    printf "\n=== CUDA THREADS (first 32) ===\n"
+    info cuda threads 0 32
+    printf "\n=== BACKTRACE (kernel 0, block 0, thread 0) ===\n"
+    cuda kernel 0 block 0 thread 0
+    bt
+    printf "\n=== BACKTRACE (kernel 0, block 1, thread 0) ===\n"
+    cuda kernel 0 block 1 thread 0
+    bt
+    printf "\n=== HOST THREADS ===\n"
+    info threads
+    printf "\n=== HOST BACKTRACE (main thread) ===\n"
+    thread 1
+    bt
+    set logging off
+    detach
+    quit
+    EOF
+    $ cuda-gdb -batch -p <PID> -x /tmp/cuda_cmds.gdb
+
+Alternatively, pipe commands directly. This example attaches to a running CUDA
+process and dumps kernel state, thread backtraces, and host thread information
+to a log file:
+
+.. code-block:: bash
+
+    $ GDB_CMDS=$(cat <<'EOF'
+    set pagination off
+    set logging file /tmp/cuda_debug.log
+    set logging on
+    printf "=== CUDA KERNELS ===\n"
+    info cuda kernels
+    printf "\n=== HOST THREADS ===\n"
+    info threads
+    thread apply all bt
+    set logging off
+    detach
+    quit
+    EOF
+    )
+    $ echo "$GDB_CMDS" | cuda-gdb -batch -p $PID 2>&1
+
 
 CUDA Debugging with cuda-gdb
 ----------------------------

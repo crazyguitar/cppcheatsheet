@@ -17,36 +17,130 @@
   });
 })();
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="{% if pagename == 'index' %}Comprehensive C/C++ cheat sheet with practical code snippets for developers. Learn C/C++ basics, advanced topics, memory management, and more.{% else %}{{ title }} - C/C++ code examples and snippets from the comprehensive C/C++ cheat sheet.{% endif %}">
-<meta name="keywords" content="C++, C, C++ cheat sheet, C cheat sheet, C++ tutorial, C tutorial, C++ examples, C examples, C++ code snippets, C code snippets, programming, development">
-<meta name="author" content="crazyguitar">
-<meta name="robots" content="index, follow">
-{%- if pagename == 'index' %}
-<link rel="canonical" href="https://cppcheatsheet.com/"/>
-<meta property="og:url" content="https://cppcheatsheet.com/">
-<meta property="og:description" content="Comprehensive C/C++ cheat sheet with practical code snippets for developers. Learn C/C++ basics, advanced topics, memory management, and more.">
-{%- elif pagename == '404' -%}
-{%- else %}
-<link rel="canonical" href="https://cppcheatsheet.com/{{ pagename }}{{ file_suffix }}"/>
-<meta property="og:url" content="https://cppcheatsheet.com/{{ pagename }}{{ file_suffix }}">
-<meta property="og:description" content="{{ title }} - C/C++ code examples and snippets from the comprehensive C/C++ cheat sheet.">
-{%- endif %}
+<meta name="author" content="Tsai, Chang-Ning">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter cards (sphinxext-opengraph emits og:*, not twitter:*) -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ title }}{{ titlesuffix }}">
+<meta name="twitter:description" content="{% if pagename == 'index' %}Comprehensive C/C++ cheatsheet with working code snippets: modern C/C++ standards, system programming, CUDA, debugging, and build systems.{% else %}{{ title }} — C/C++ code examples from the cppcheatsheet.com reference.{% endif %}">
+<meta name="twitter:image" content="https://cppcheatsheet.com/_static/logo.png">
+
 <!-- Google Scholar metadata -->
 <meta name="citation_title" content="C/C++ Cheatsheet">
 <meta name="citation_author" content="Tsai, Chang-Ning">
 <meta name="citation_publication_date" content="2025">
 <meta name="citation_online_date" content="2025-05-27">
 <meta name="citation_pdf_url" content="https://cppcheatsheet.readthedocs.io/_/downloads/en/latest/pdf/">
-<!-- DOI with Zenodo -->
 <meta name="citation_doi" content="10.5281/zenodo.15528896">
 
-<meta property="og:type" content="article">
-<meta property="og:title" content="{{ title }}{{ titlesuffix }}">
-<meta property="og:site_name" content="C/C++ Cheat Sheet">
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="{{ title }}{{ titlesuffix }}">
-<meta name="twitter:description" content="{% if pagename == 'index' %}Comprehensive C/C++ cheat sheet with practical code snippets for developers{% else %}{{ title }} - C/C++ code examples and snippets{% endif %}">
+<!-- JSON-LD: WebSite + SearchAction -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "C/C++ Cheatsheet",
+  "alternateName": "cppcheatsheet",
+  "url": "https://cppcheatsheet.com/",
+  "inLanguage": "en",
+  "description": "Comprehensive C/C++ cheatsheet with working code snippets covering modern C/C++ standards, system programming, CUDA, debugging, and build systems.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://cppcheatsheet.com/search.html?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Tsai, Chang-Ning",
+    "url": "https://github.com/crazyguitar"
+  },
+  "license": "https://github.com/crazyguitar/cppcheatsheet/blob/master/LICENSE"
+}
+</script>
+
+{%- if pagename != 'index' and pagename != '404' and pagename != 'search' and pagename != 'genindex' and title is defined and title %}
+<!-- JSON-LD: TechArticle for content pages -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": {{ title | striptags | tojson }},
+  "name": {{ title | striptags | tojson }},
+  "url": {{ ("https://cppcheatsheet.com/" ~ pagename ~ file_suffix) | tojson }},
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": {{ ("https://cppcheatsheet.com/" ~ pagename ~ file_suffix) | tojson }}
+  },
+  "inLanguage": "en",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "C/C++ Cheatsheet",
+    "url": "https://cppcheatsheet.com/"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Tsai, Chang-Ning",
+    "url": "https://github.com/crazyguitar"
+  },
+  "publisher": {
+    "@type": "Person",
+    "name": "Tsai, Chang-Ning",
+    "url": "https://github.com/crazyguitar"
+  },
+  "datePublished": "2025-05-27",
+  {%- if last_updated %}
+  "dateModified": {{ last_updated | tojson }},
+  {%- endif %}
+  "image": "https://cppcheatsheet.com/_static/logo.png",
+  "license": "https://github.com/crazyguitar/cppcheatsheet/blob/master/LICENSE",
+  "keywords": "C, C++, CUDA, Rust, systems programming, cheatsheet, reference"
+}
+</script>
+
+<!-- JSON-LD: BreadcrumbList -->
+{#-
+  Build a clean breadcrumb trail.
+  - Drop trailing "index" segment — /notes/cpp/index.html is the C++ landing page,
+    and labelling the tail crumb "Index" is meaningless to users.
+  - Map known directory segments to display names (cpp → "C++", os → "OS", ...).
+  - Use the actual page title for the final crumb.
+#}
+{%- set _seg_name = {
+    'notes': 'Notes',
+    'c': 'C',
+    'cpp': 'C++',
+    'cuda': 'CUDA',
+    'os': 'OS',
+    'tools': 'Tools',
+    'debug': 'Debugging',
+    'rust': 'Rust',
+    'blog': 'Blog',
+} %}
+{%- set _raw_parts = pagename.split('/') %}
+{%- set _trail = _raw_parts[:-1] if _raw_parts[-1] == 'index' else _raw_parts %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": "https://cppcheatsheet.com/"
+    }{% for part in _trail %},
+    {
+      "@type": "ListItem",
+      "position": {{ loop.index + 1 }},
+      "name": {{ (title | striptags if loop.last else (_seg_name[part] if part in _seg_name else part|replace('_', ' ')|replace('-', ' ')|title)) | tojson }},
+      "item": {{ ("https://cppcheatsheet.com/" ~ _trail[:loop.index]|join('/') ~ ("/" if not loop.last else file_suffix)) | tojson }}
+    }{% endfor %}
+  ]
+}
+</script>
+{%- endif %}
+
 {%- if tracking_id %}
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ tracking_id }}"></script>

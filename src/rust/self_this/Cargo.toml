@@ -1,0 +1,8 @@
+[package]
+name = "self_this"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "self_this"
+path = "main.rs"

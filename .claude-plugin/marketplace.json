@@ -1,0 +1,20 @@
+{
+  "name": "cppcheatsheet",
+  "owner": {
+    "name": "crazyguitar"
+  },
+  "plugins": [
+    {
+      "name": "cppcheatsheet",
+      "source": {
+        "source": "github",
+        "repo": "crazyguitar/cppcheatsheet"
+      },
+      "description": "Comprehensive C/C++ programming reference covering modern C11-C23, C++11-C++23, system programming, CUDA GPU computing, debugging tools, Rust interop, and advanced topics",
+      "version": "1.0.0",
+      "author": {
+        "name": "crazyguitar"
+      }
+    }
+  ]
+}

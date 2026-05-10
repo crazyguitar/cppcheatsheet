@@ -1,0 +1,8 @@
+[package]
+name = "smart_pointers"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "smart_pointers"
+path = "main.rs"

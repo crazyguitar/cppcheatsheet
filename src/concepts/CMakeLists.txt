@@ -1,0 +1,5 @@
+add_subdirectory(defining)
+add_subdirectory(stdlib)
+add_subdirectory(requires-expr)
+add_subdirectory(syntax)
+add_subdirectory(subsumption)

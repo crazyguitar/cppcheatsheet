@@ -3,8 +3,8 @@ Resource Management
 ===================
 
 .. meta::
-   :description: C++ RAII pattern guide for resource management, covering constructors, destructors, and exception-safe code.
-   :keywords: C++, RAII, resource management, constructor, destructor, exception safety, scope guard
+   :description: C++ RAII (Resource Acquisition Is Initialization) guide covering resource management, constructor failure handling, exception safety guarantees, lock_guard / unique_lock / scoped_lock, scope guards, and two-phase initialization.
+   :keywords: C++, RAII, resource acquisition is initialization, resource management, exception safety, constructor failure, failed resource acquisition, basic guarantee, strong guarantee, nothrow, std::lock_guard, std::unique_lock, std::scoped_lock, scope guard, scope_exit, two-phase initialization, RAII wrapper
 
 .. contents:: Table of Contents
     :backlinks: none
@@ -15,467 +15,17 @@ acquires resources; when it is destroyed, it releases them. This pattern elimina
 resource leaks and ensures exception safety by leveraging C++'s deterministic
 destruction guarantees.
 
-Note that `Rust <https://www.rust-lang.org/>`_ enforces ownership at compile time, offering strong safety guarantees. 
-Interestingly, Rust's ownership model closely resembles C++'s RAII and move semantics 
-(available since C++11). For example, Rust's ownership transfer is analogous to 
-``std::move``, and its ``Drop`` trait mirrors C++ destructors. This section explores 
-these resource management techniques in depth.
-
-
-Special Member Functions
-------------------------
-
-:Source: `src/raii/constructors <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/constructors>`_
-
-C++ provides six special member functions that control object lifecycle: default
-constructor, destructor, copy constructor, copy assignment operator, move constructor,
-and move assignment operator. Understanding when each is called is essential for
-implementing correct resource management.
-
-The following example demonstrates all special member functions and the scenarios
-that trigger each one. Note how copy operations create independent copies while
-move operations transfer ownership, leaving the source in a valid but unspecified state:
-
-.. code-block:: cpp
-
-    #include <iostream>
-    #include <utility>
-
-    class Resource {
-     public:
-      // Constructor: acquires resource
-      Resource(int x) : x_(x) {}
-
-      // Default constructor
-      Resource() = default;
-
-      // Copy constructor: creates independent copy
-      Resource(const Resource &other) : Resource(other.x_) {
-        std::cout << "copy constructor\n";
-      }
-
-      // Copy assignment: replaces with copy
-      Resource &operator=(const Resource &other) {
-        std::cout << "copy assignment\n";
-        x_ = other.x_;
-        return *this;
-      }
-
-      // Move constructor: transfers ownership
-      Resource(Resource &&other) noexcept : x_(std::move(other.x_)) {
-        std::cout << "move constructor\n";
-        other.x_ = 0;
-      }
-
-      // Move assignment: transfers ownership
-      Resource &operator=(Resource &&other) noexcept {
-        std::cout << "move assignment\n";
-        x_ = std::move(other.x_);
-        return *this;
-      }
-
-     private:
-      int x_ = 0;
-    };
-
-    int main(int argc, char *argv[]) {
-      Resource r1;                       // default constructor
-      Resource r2(1);                    // constructor
-      Resource r3 = Resource(2);         // constructor (copy elision)
-      Resource r4(r2);                   // copy constructor
-      Resource r5(std::move(Resource(2))); // move constructor
-      Resource r6 = r1;                  // copy constructor
-      Resource r7 = std::move(r3);       // move constructor
-
-      Resource r8, r9;
-      r8 = r2;                           // copy assignment
-      r9 = std::move(r4);                // move assignment
-      r9 = Resource(2);                  // move assignment
-    }
-
-Rule of Zero
-------------
-
-:Source: `src/raii/rule-of-zero <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/rule-of-zero>`_
-
-The **Rule of Zero** states that classes should not define custom destructors, copy/move
-constructors, or copy/move assignment operators. Instead, they should rely on member
-objects that manage their own resources (like ``std::string``, ``std::vector``, or
-smart pointers). This approach minimizes boilerplate code and reduces the risk of
-resource management bugs.
-
-When all members handle their own cleanup, the compiler-generated special member
-functions work correctly by default:
-
-.. code-block:: cpp
-
-    #include <iostream>
-    #include <string>
-
-    class Document {
-     public:
-      Document(const std::string &content) : content_(content) {}
-
-      // No destructor, copy/move constructors, or assignment operators needed.
-      // The compiler-generated versions correctly handle std::string member.
-
-      friend std::ostream &operator<<(std::ostream &os, const Document &doc);
-
-     private:
-      std::string content_;
-    };
-
-    std::ostream &operator<<(std::ostream &os, const Document &doc) {
-      return os << doc.content_;
-    }
-
-    int main(int argc, char *argv[]) {
-      Document doc("Rule of Zero");
-      std::cout << doc << "\n";
-    }
-
-Rule of Three
--------------
-
-:Source: `src/raii/rule-of-three <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/rule-of-three>`_
-
-The **Rule of Three** (C++98) states that if a class requires a user-defined destructor,
-copy constructor, or copy assignment operator, it almost certainly requires all three.
-This rule applies when a class manages resources that are not automatically handled
-by its members (e.g., raw pointers, file handles, network connections).
-
-**What happens without move semantics?** When you define any of the Big Three, the
-compiler will NOT generate move constructor or move assignment operator. Instead,
-move operations fall back to copy operations. This is safe but inefficient—moving
-an object performs a deep copy instead of transferring ownership. For classes
-managing expensive resources (large buffers, file handles), this overhead matters.
-See :ref:`Rule of Five <rule-of-five>` for the efficient C++11 solution.
-
-Failing to implement all three leads to resource leaks or double-free bugs. In this
-example, the class manages a dynamically allocated character array:
-
-.. code-block:: cpp
-
-    #include <cstring>
-    #include <iostream>
-    #include <memory>
-    #include <string>
-
-    class Buffer {
-     public:
-      Buffer(const char *data, size_t size) : data_(new char[size]), size_(size) {
-        std::memcpy(data_, data, size);
-      }
-
-      // 1. User-defined destructor: releases resource
-      ~Buffer() { delete[] data_; }
-
-      // 2. User-defined copy constructor: deep copy
-      Buffer(const Buffer &other) : Buffer(other.data_, other.size_) {}
-
-      // 3. User-defined copy assignment: exception-safe deep copy
-      Buffer &operator=(const Buffer &other) {
-        if (this == std::addressof(other)) {
-          return *this;
-        }
-        char *new_data = new char[other.size_];  // Allocate first
-        std::memcpy(new_data, other.data_, other.size_);
-        delete[] data_;  // Then release old resource
-        data_ = new_data;
-        size_ = other.size_;
-        return *this;
-      }
-
-      friend std::ostream &operator<<(std::ostream &os, const Buffer &buf);
-
-     private:
-      char *data_;
-      size_t size_;
-    };
-
-    std::ostream &operator<<(std::ostream &os, const Buffer &buf) {
-      return os << buf.data_;
-    }
-
-    int main(int argc, char *argv[]) {
-      std::string s = "Rule of Three";
-      Buffer buf(s.c_str(), s.size() + 1);
-      std::cout << buf << "\n";
-    }
-
-.. _rule-of-five:
-
-Rule of Five
-------------
-
-:Source: `src/raii/rule-of-five <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/rule-of-five>`_
-
-The **Rule of Five** (C++11) extends the Rule of Three to include move semantics.
-If a class defines any of the five special member functions (destructor, copy
-constructor, copy assignment, move constructor, move assignment), it should
-explicitly define or delete all five.
-
-Move operations enable efficient transfer of resources without copying—ownership
-is transferred in O(1) instead of O(n) deep copy. The ``std::exchange`` utility
-is particularly useful for implementing move constructors, as it atomically
-replaces a value and returns the old one:
-
-.. code-block:: cpp
-
-    #include <cstring>
-    #include <iostream>
-    #include <memory>
-    #include <string>
-    #include <utility>
-
-    class Buffer {
-     public:
-      Buffer(const char *data, size_t size) : data_(new char[size]), size_(size) {
-        std::memcpy(data_, data, size);
-      }
-
-      // 1. Destructor
-      ~Buffer() { delete[] data_; }
-
-      // 2. Copy constructor
-      Buffer(const Buffer &other) : Buffer(other.data_, other.size_) {}
-
-      // 3. Move constructor: transfers ownership using std::exchange
-      Buffer(Buffer &&other) noexcept
-          : data_(std::exchange(other.data_, nullptr)),
-            size_(std::exchange(other.size_, 0)) {}
-
-      // 4. Copy assignment: copy-and-swap idiom
-      Buffer &operator=(const Buffer &other) {
-        return *this = Buffer(other);
-      }
-
-      // 5. Move assignment: swap resources
-      Buffer &operator=(Buffer &&other) noexcept {
-        std::swap(data_, other.data_);
-        std::swap(size_, other.size_);
-        return *this;
-      }
-
-      friend std::ostream &operator<<(std::ostream &os, const Buffer &buf);
-
-     private:
-      char *data_ = nullptr;
-      size_t size_ = 0;
-    };
-
-    std::ostream &operator<<(std::ostream &os, const Buffer &buf) {
-      return os << buf.data_;
-    }
-
-    int main(int argc, char *argv[]) {
-      std::string s = "Rule of Five";
-      Buffer buf(s.c_str(), s.size() + 1);
-      std::cout << buf << "\n";
-    }
-
-**When to use which rule:**
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 40 40
-
-   * - Rule
-     - When to Use
-     - Example
-   * - Rule of Zero
-     - No custom destructor or special member functions needed
-     - ``std::string``, ``std::vector``, smart pointers as members
-   * - Rule of Three
-     - Custom destructor required (pre-C++11)
-     - Raw pointers, C file handles
-   * - Rule of Five
-     - Custom destructor required (C++11+)
-     - Same as Rule of Three, with move support
-
-Move and Destructor
--------------------
-
-:Source: `src/raii/move-leak <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/move-leak>`_
-
-A critical detail: moving from an object does **not** call its destructor. The
-moved-from object remains alive until it goes out of scope. If the move constructor
-fails to properly reset the source object's state, the destructor may attempt to
-release resources that were already transferred, causing double-free bugs—or worse,
-the moved-from object may still hold resources that leak.
-
-**Problematic move constructor (causes resource leak):**
-
-.. code-block:: cpp
-
-    #include <cstdio>
-    #include <utility>
-
-    class File {
-     public:
-      explicit File(const char *path) : handle_(std::fopen(path, "w")) {}
-
-      ~File() {
-        if (handle_) std::fclose(handle_);
-      }
-
-      // Bug: does not reset other.handle_ to nullptr
-      File(File &&other) noexcept : handle_(other.handle_) {
-        // other.handle_ still points to the file!
-      }
-
-     private:
-      std::FILE *handle_;
-    };
-
-    int main() {
-      File f1("/tmp/test.txt");
-      File f2(std::move(f1));
-      // When f1's destructor runs, it closes the file
-      // When f2's destructor runs, it closes the same file again -> double-free!
-    }
-
-**Correct move constructor:**
-
-Always reset the moved-from object to a valid empty state. Using ``std::exchange``
-makes this pattern concise and less error-prone:
-
-.. code-block:: cpp
-
-    // Correct: reset source to nullptr
-    File(File &&other) noexcept : handle_(std::exchange(other.handle_, nullptr)) {}
-
-The moved-from object's destructor will still run, but with ``handle_`` set to
-``nullptr``, the conditional check ``if (handle_)`` prevents any invalid operation.
-
-Using std::exchange
--------------------
-
-:Source: `src/raii/move-exchange <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/move-exchange>`_
-
-``std::exchange`` (C++14) atomically replaces a value and returns the old one,
-making it ideal for implementing move operations. It eliminates the risk of
-forgetting to reset the source object and produces cleaner, more readable code.
-
-**Complete example with std::exchange:**
-
-.. code-block:: cpp
-
-    #include <cstdio>
-    #include <utility>
-
-    class File {
-     public:
-      explicit File(const char *path) : handle_(std::fopen(path, "w")) {}
-
-      ~File() {
-        if (handle_) std::fclose(handle_);
-      }
-
-      // Move constructor using std::exchange
-      File(File &&other) noexcept
-          : handle_(std::exchange(other.handle_, nullptr)) {}
-
-      // Move assignment using std::exchange
-      File &operator=(File &&other) noexcept {
-        if (this != &other) {
-          if (handle_) std::fclose(handle_);  // Release current resource
-          handle_ = std::exchange(other.handle_, nullptr);
-        }
-        return *this;
-      }
-
-      // Non-copyable
-      File(const File &) = delete;
-      File &operator=(const File &) = delete;
-
-     private:
-      std::FILE *handle_ = nullptr;
-    };
-
-**Alternative: swap-based move assignment:**
-
-Another common pattern uses ``std::swap``, which is exception-safe and handles
-self-assignment automatically:
-
-.. code-block:: cpp
-
-    File &operator=(File &&other) noexcept {
-      std::swap(handle_, other.handle_);
-      return *this;
-      // other's destructor will close our old handle
-    }
-
-Preventing Object Slicing
--------------------------
-
-:Source: `src/raii/polymorphic <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/polymorphic>`_
-
-Polymorphic base classes should suppress public copy and move operations to prevent
-*object slicing*. Slicing occurs when a derived class object is copied into a base
-class object, losing the derived class's data and behavior.
-
-**Problematic code (allows slicing):**
-
-.. code-block:: cpp
-
-    #include <iostream>
-    #include <string>
-
-    class Animal {
-     public:
-      virtual std::string speak() { return "..."; }
-    };
-
-    class Dog : public Animal {
-     public:
-      std::string speak() override { return "woof"; }
-    };
-
-    void process(Animal &a) {
-      auto copy = a;  // Slicing! Only Animal part is copied
-      std::cout << copy.speak() << "\n";  // Prints "..." not "woof"
-    }
-
-    int main(int argc, char *argv[]) {
-      Dog dog;
-      process(dog);  // Output: "..." (sliced!)
-    }
-
-**Correct approach (prevents slicing):**
-
-By deleting copy operations in the base class, the compiler prevents accidental
-slicing at compile time:
-
-.. code-block:: cpp
-
-    #include <iostream>
-    #include <string>
-
-    class Animal {
-     public:
-      Animal() = default;
-      Animal(const Animal &) = delete;
-      Animal &operator=(const Animal &) = delete;
-      virtual ~Animal() = default;
-
-      virtual std::string speak() { return "..."; }
-    };
-
-    class Dog : public Animal {
-     public:
-      std::string speak() override { return "woof"; }
-    };
-
-    void process(Animal &a) {
-      // auto copy = a;  // Compile error: copy constructor deleted
-      std::cout << a.speak() << "\n";
-    }
-
-    int main(int argc, char *argv[]) {
-      Dog dog;
-      process(dog);  // Output: "woof"
-    }
+RAII underpins the standard library: ``std::unique_ptr`` owns a heap allocation,
+``std::lock_guard`` owns a mutex lock, ``std::fstream`` owns a file handle. Each
+releases its resource automatically when the wrapping object goes out of scope,
+even if an exception propagates through the scope. For the copy/move machinery
+that makes RAII types composable with containers and generic code, see
+:doc:`cpp_move`.
+
+Note that `Rust <https://www.rust-lang.org/>`_ enforces ownership at compile time, offering strong safety guarantees.
+Interestingly, Rust's ownership model closely resembles C++'s RAII and move semantics
+(available since C++11). For example, Rust's ownership transfer is analogous to
+``std::move``, and its ``Drop`` trait mirrors C++ destructors.
 
 Initializer Lists
 -----------------
@@ -576,3 +126,343 @@ This example demonstrates a simple RAII wrapper for a file handle:
     Modern C++ provides ``std::unique_ptr`` with custom deleters and ``std::fstream``
     for most resource management needs. Use custom RAII wrappers only when standard
     library alternatives are insufficient.
+
+Constructor Failure and Exception Safety
+----------------------------------------
+
+:Source: `src/raii/constructor-failure <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/constructor-failure>`_
+
+When a constructor throws, the object being constructed **never existed** from
+the language's perspective: its destructor does **not** run. However,
+destructors for any fully-constructed subobjects—base classes and data
+members—**do** run, in reverse order of construction. This asymmetry is the
+single most important rule for handling failed resource acquisition in C++
+constructors. It has two concrete consequences:
+
+1. A raw-pointer member that has been ``new``'d but not yet handed off to an
+   owning wrapper leaks when the constructor throws.
+2. A smart-pointer or container member that owns its resource cleans up
+   automatically, because the *member's* destructor runs even though the
+   *enclosing object's* destructor does not.
+
+**Leaky: raw pointer acquired, then throw:**
+
+.. code-block:: cpp
+
+    class LeakyResource {
+     public:
+      LeakyResource() {
+        first_ = new Handle("first");
+        throw std::runtime_error("second resource failed");
+        // Never reached. ~LeakyResource does not run. first_ leaks.
+      }
+      ~LeakyResource() { delete first_; }
+     private:
+      Handle *first_ = nullptr;
+    };
+
+**Safe: unique_ptr member cleans up on throw:**
+
+.. code-block:: cpp
+
+    class SafeResource {
+     public:
+      SafeResource() : first_(std::make_unique<Handle>("first")) {
+        throw std::runtime_error("second resource failed");
+        // first_ is a fully-constructed member; its destructor runs.
+      }
+     private:
+      std::unique_ptr<Handle> first_;
+    };
+
+The rule generalises: acquire every resource through an owning member
+(``std::unique_ptr``, ``std::vector``, ``std::string``, a custom RAII
+wrapper). Never leave a raw ``new`` exposed between acquisition and
+ownership transfer.
+
+**function-try-block:**
+
+A *function-try-block* catches exceptions thrown from the
+member-initializer-list. The catch handler cannot suppress the exception—if
+the handler does not rethrow explicitly, the exception is rethrown
+implicitly at the end of the block. By the time the handler runs, members
+have already been destroyed:
+
+.. code-block:: cpp
+
+    class Reported {
+     public:
+      Reported() try : handle_(std::make_unique<Handle>("reported")) {
+        throw std::runtime_error("post-init failure");
+      } catch (const std::exception &) {
+        // handle_ is already destroyed; exception rethrows implicitly.
+      }
+     private:
+      std::unique_ptr<Handle> handle_;
+    };
+
+Exception Safety Guarantees
+---------------------------
+
+:Source: `src/raii/exception-safety <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/exception-safety>`_
+
+When an operation throws, the calling code needs to know what state the
+affected object is left in. C++ code is categorised into four escalating
+guarantees (defined by Abrahams):
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 85
+
+   * - Guarantee
+     - Meaning
+   * - No-throw
+     - The operation never throws. Declared ``noexcept``. Required for move
+       operations used by ``std::vector`` reallocation, for swap, and for
+       destructors.
+   * - Strong
+     - The operation either succeeds or has no effect (commit-or-rollback).
+       Achieved by the copy-and-swap idiom: do the work on a copy, then
+       swap — the swap is nothrow, so the commit cannot fail.
+   * - Basic
+     - Invariants are preserved and no resources leak, but the object's
+       observable state may be partially updated.
+   * - None
+     - Avoid. Broken invariants are possible.
+
+**Copy-and-swap for the strong guarantee:**
+
+.. code-block:: cpp
+
+    class Counter {
+     public:
+      void swap(Counter &other) noexcept {
+        std::swap(value_, other.value_);
+        std::swap(log_, other.log_);
+      }
+
+      // Strong guarantee: copy constructs a temporary (may throw and die
+      // unused, leaving *this unchanged), then nothrow-swaps it in.
+      Counter &operator=(Counter other) noexcept {
+        swap(other);
+        return *this;
+      }
+     private:
+      int value_ = 0;
+      std::vector<int> log_;
+    };
+
+**Strong vs basic in practice:**
+
+.. code-block:: cpp
+
+    void Counter::add(int delta, bool fail) {
+      log_.push_back(delta);                // happens first
+      if (fail) throw std::runtime_error("");
+      value_ += delta;
+    }
+
+After ``add(5, true)`` throws, ``value_`` is unchanged but ``log_`` has
+grown — the object is still valid and usable (basic guarantee), but the
+operation did not roll back (no strong guarantee). Reorder the work so the
+throwing step runs first, before any visible mutation, to upgrade basic to
+strong.
+
+Lock-Based RAII
+---------------
+
+:Source: `src/raii/lock-guard <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/lock-guard>`_
+
+The standard library ships three RAII wrappers for mutex locking. Each
+acquires the lock in its constructor and releases it in its destructor,
+guaranteeing that the mutex is released even if the protected scope exits
+via exception.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 18 60
+
+   * - Wrapper
+     - Since
+     - Use when
+   * - ``std::lock_guard``
+     - C++11
+     - Simple scoped locking. No manual unlock or deferred acquisition.
+   * - ``std::unique_lock``
+     - C++11
+     - Deferred/timed acquisition, manual unlock, transferable ownership,
+       required by ``std::condition_variable::wait``.
+   * - ``std::scoped_lock``
+     - C++17
+     - Locking two or more mutexes at once with built-in deadlock
+       avoidance. Prefer over ``std::lock(m1, m2) + lock_guard``.
+
+**Scoped mutual exclusion:**
+
+.. code-block:: cpp
+
+    std::mutex m;
+    int counter = 0;
+    auto worker = [&] {
+      for (int i = 0; i < 10000; ++i) {
+        std::lock_guard<std::mutex> guard(m);
+        ++counter;
+      }
+    };
+
+**Deferred acquisition with unique_lock:**
+
+.. code-block:: cpp
+
+    std::unique_lock<std::mutex> lock(m, std::defer_lock);
+    // ... some work that does not need the lock ...
+    lock.lock();
+    // ... critical section ...
+    lock.unlock();   // release early; destructor no longer unlocks
+
+**Multiple mutexes without deadlock:**
+
+.. code-block:: cpp
+
+    std::mutex m1, m2;
+    {
+      std::scoped_lock lock(m1, m2);  // acquires both safely
+      // critical section
+    }
+
+``std::scoped_lock`` uses a deadlock-avoidance algorithm (equivalent to
+``std::lock``) when given multiple mutexes, so two threads locking
+``(m1, m2)`` and ``(m2, m1)`` cannot deadlock.
+
+Scope Guards
+------------
+
+:Source: `src/raii/scope-guard <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/scope-guard>`_
+
+Writing a dedicated RAII wrapper class is overkill when the cleanup is a
+single ad-hoc statement: restore a flag, decrement a counter, roll back a
+partially-completed operation. A *scope guard* runs an arbitrary callable
+when it leaves scope. It generalises RAII to any cleanup action, without
+requiring a new class per resource.
+
+C++26 standardises ``std::scope_exit`` / ``std::scope_fail`` /
+``std::scope_success`` (formerly Library Fundamentals TS v3). Until those
+are available, a small template is enough:
+
+.. code-block:: cpp
+
+    template <typename F>
+    class ScopeGuard {
+     public:
+      explicit ScopeGuard(F f) : f_(std::move(f)) {}
+      ~ScopeGuard() { if (active_) f_(); }
+      void dismiss() noexcept { active_ = false; }
+      ScopeGuard(const ScopeGuard &) = delete;
+      ScopeGuard &operator=(const ScopeGuard &) = delete;
+     private:
+      F f_;
+      bool active_ = true;
+    };
+
+    template <typename F>
+    ScopeGuard<F> make_scope_guard(F f) { return ScopeGuard<F>(std::move(f)); }
+
+**Rollback on early return:**
+
+.. code-block:: cpp
+
+    void transfer(Account &from, Account &to, int amount) {
+      from.debit(amount);
+      auto rollback = make_scope_guard([&] { from.credit(amount); });
+      to.credit(amount);    // may throw — rollback runs
+      rollback.dismiss();   // commit reached; skip the rollback
+    }
+
+**std::unique_ptr with custom deleter as a scope guard:**
+
+A ``std::unique_ptr`` with a custom deleter is a ready-made scope guard —
+the "pointer" can be any sentinel and the deleter is the cleanup:
+
+.. code-block:: cpp
+
+    auto deleter = [](void *) { /* cleanup */ };
+    std::unique_ptr<void, decltype(deleter)> guard(
+        reinterpret_cast<void *>(uintptr_t{1}), deleter);
+
+This pattern is especially useful for wrapping C APIs with free-function
+cleanup (e.g., ``std::unique_ptr<FILE, decltype(&std::fclose)>``). See
+:doc:`cpp_smartpointers` for more on custom deleters.
+
+Two-Phase Initialization: Why RAII Avoids It
+--------------------------------------------
+
+:Source: `src/raii/two-phase-init <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/raii/two-phase-init>`_
+
+Some older C++ code — and code translated from languages without
+exceptions — uses *two-phase initialization*: a default constructor that
+does almost nothing, followed by a separate ``init()`` call that does the
+real acquisition and returns a success flag. RAII replaces this pattern.
+
+The two-phase object has a zombie state between construction and
+``init()`` where it exists but is not usable. Every method must check an
+``initialized_`` flag, callers must remember to call ``init()``, and there
+is no type-system guarantee that a constructed object is a usable object:
+
+.. code-block:: cpp
+
+    class TwoPhase {
+     public:
+      TwoPhase() = default;           // produces a zombie
+      bool init(int v) {              // error signalled by bool — easy to ignore
+        if (v < 0) return false;
+        value_ = v;
+        initialized_ = true;
+        return true;
+      }
+      int value() const {
+        if (!initialized_) throw std::logic_error("not initialized");
+        return value_;
+      }
+     private:
+      int value_ = 0;
+      bool initialized_ = false;
+    };
+
+The RAII equivalent makes construction all-or-nothing. If acquisition
+fails, the constructor throws and the object never existed; if it
+succeeds, every method can assume valid state:
+
+.. code-block:: cpp
+
+    class Raii {
+     public:
+      explicit Raii(int v) : value_(v) {
+        if (v < 0) throw std::invalid_argument("v must be non-negative");
+      }
+      int value() const noexcept { return value_; }   // no flag check
+     private:
+      int value_;
+    };
+
+**Why RAII wins:**
+
+- No invalid intermediate state — the type system enforces "constructed ⇒
+  usable".
+- Errors cannot be silently ignored; an exception is hard to miss.
+- Member functions do not carry an ``if (!initialized_)`` tax.
+- Composes cleanly with containers, smart pointers, and generic code,
+  which assume constructed objects are usable.
+
+The historical argument against RAII was exception-handling overhead, but
+modern compilers make the nothrow path essentially free. Use RAII.
+
+See Also
+--------
+
+- :doc:`cpp_move` — special member functions, Rule of Zero/Three/Five, value
+  categories, move-only types, perfect forwarding, and common move semantics
+  pitfalls.
+- :doc:`cpp_smartpointers` — ``std::unique_ptr`` and ``std::shared_ptr``, the
+  standard-library RAII wrappers for heap allocations.
+- :doc:`cpp_rvo` — return value optimization and copy elision, which interact
+  with RAII-managed return values.

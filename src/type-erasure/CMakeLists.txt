@@ -1,0 +1,5 @@
+add_subdirectory(any-drawable)
+add_subdirectory(sbo)
+add_subdirectory(std-function)
+add_subdirectory(std-any)
+add_subdirectory(move-only-function)

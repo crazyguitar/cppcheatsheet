@@ -10,13 +10,31 @@ C and C++ continue to evolve with new standards that bring modern features while
 
 Whether you're refreshing your memory on pointer arithmetic, exploring modern C++23 features, debugging a tricky memory issue with Valgrind, or figuring out how to set up a CMake project, you'll find practical examples here. The goal is simple: provide clear, working code that you can understand and adapt for your own projects. Contributions and suggestions are always welcome on `GitHub <https://github.com/crazyguitar/cppcheatsheet>`_.
 
+Plugin
+------
+
+**cppcheatsheet** is available as a `Claude Code <https://claude.com/claude-code>`_ plugin. Once installed,
+Claude automatically uses the cheat sheets to answer C/C++ questions.
+
+.. code-block:: bash
+
+    # Step 1: Add the marketplace
+    claude plugin marketplace add crazyguitar/cppcheatsheet
+
+    # Step 2: Install the plugin
+    claude plugin install cppcheatsheet@cppcheatsheet
+
+For local testing and manual installation, see the main `README <https://github.com/crazyguitar/cppcheatsheet/blob/master/README.rst>`_.
+
 .. toctree::
    :maxdepth: 1
-   :caption: Contents
 
+   notes/interview/index
    notes/c/index
    notes/cpp/index
    notes/os/index
    notes/cuda/index
    notes/tools/index
    notes/debug/index
+   notes/rust/index
+   notes/blog/index

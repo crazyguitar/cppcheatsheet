@@ -1,0 +1,8 @@
+[package]
+name = "pattern_matching"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "pattern_matching"
+path = "main.rs"

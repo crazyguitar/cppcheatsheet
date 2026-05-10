@@ -1,0 +1,8 @@
+[package]
+name = "proc_macros"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "proc_macros"
+path = "main.rs"

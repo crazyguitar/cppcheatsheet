@@ -22,17 +22,22 @@ manipulation using STL containers and algorithms.
 
    cpp_basic
    cpp_raii
+   cpp_move
    cpp_string
    cpp_container
    cpp_iterator
    cpp_template
    cpp_casting
+   cpp_polymorphism
+   cpp_type_erasure
    cpp_constexpr
    cpp_lambda
+   cpp_concepts
    cpp_requires
    cpp_smartpointers
    cpp_rvo
    cpp_algorithm
    cpp_coroutine
    cpp_time
+   cpp_modules
    cpp_cmake

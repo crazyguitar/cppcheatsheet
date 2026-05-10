@@ -27,7 +27,12 @@ optimizing memory access patterns.
 
    cuda_basics
    cuda_cpp
+   cuda_thrust
    cuda_coop_groups
    cuda_memory_visibility
+   cuda_graph
+   cuda_quantization
    cuda_pipelines
+   cuda_nccl
    cuda_ipc
+   cuda_hwloc

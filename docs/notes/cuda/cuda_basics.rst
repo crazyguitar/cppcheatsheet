@@ -47,6 +47,43 @@ control over launch configuration than the ``<<<>>>`` syntax.
     cfg.stream = stream;
     LAUNCH_KERNEL(&cfg, my_kernel, d_data, n);
 
+Device Properties
+-----------------
+
+:Source: `src/cuda/device-properties <https://github.com/crazyguitar/cppcheatsheet/tree/master/src/cuda/device-properties>`_
+
+Before launching kernels, query device capabilities using ``cudaGetDeviceProperties``.
+This is essential for tuning kernel parameters like block size and shared memory usage
+based on the hardware.
+
+.. code-block:: cuda
+
+    int deviceCount = 0;
+    cudaGetDeviceCount(&deviceCount);
+
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, 0);
+
+    printf("Device: %s\n", prop.name);
+    printf("Compute capability: %d.%d\n", prop.major, prop.minor);
+    printf("Total global memory: %.2f GB\n", prop.totalGlobalMem / (1024.0 * 1024.0 * 1024.0));
+    printf("Shared memory per block: %zu bytes\n", prop.sharedMemPerBlock);
+    printf("Registers per block: %d\n", prop.regsPerBlock);
+    printf("Warp size: %d\n", prop.warpSize);
+    printf("Max threads per block: %d\n", prop.maxThreadsPerBlock);
+    printf("Max threads dim: (%d, %d, %d)\n", prop.maxThreadsDim[0], prop.maxThreadsDim[1], prop.maxThreadsDim[2]);
+    printf("Max grid size: (%d, %d, %d)\n", prop.maxGridSize[0], prop.maxGridSize[1], prop.maxGridSize[2]);
+    printf("Clock rate: %.2f MHz\n", prop.clockRate / 1000.0);
+    printf("Memory clock rate: %.2f MHz\n", prop.memoryClockRate / 1000.0);
+    printf("Memory bus width: %d bits\n", prop.memoryBusWidth);
+    printf("L2 cache size: %d bytes\n", prop.l2CacheSize);
+    printf("Multiprocessor count: %d\n", prop.multiProcessorCount);
+    printf("Max threads per multiprocessor: %d\n", prop.maxThreadsPerMultiProcessor);
+    printf("Unified addressing: %s\n", prop.unifiedAddressing ? "Yes" : "No");
+    printf("Concurrent kernels: %s\n", prop.concurrentKernels ? "Yes" : "No");
+    printf("ECC enabled: %s\n", prop.ECCEnabled ? "Yes" : "No");
+    printf("PCI Domain:Bus:Device: %04x:%02x:%02x\n", prop.pciDomainID, prop.pciBusID, prop.pciDeviceID);
+
 Hello World
 -----------
 

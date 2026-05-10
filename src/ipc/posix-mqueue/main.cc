@@ -1,6 +1,6 @@
 // Note: POSIX message queues not available on macOS
-#include <gtest/gtest.h>
 #include <fcntl.h>
+#include <gtest/gtest.h>
 #include <mqueue.h>
 #include <sys/wait.h>
 

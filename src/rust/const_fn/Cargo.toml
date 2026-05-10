@@ -1,0 +1,8 @@
+[package]
+name = "const_fn"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "const_fn"
+path = "main.rs"

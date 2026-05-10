@@ -1,0 +1,11 @@
+[package]
+name = "ffi"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+cc = "1.0"
+
+[[bin]]
+name = "ffi"
+path = "main.rs"

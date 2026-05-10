@@ -23,3 +23,4 @@ tools for system call analysis, perf for CPU profiling, and NVIDIA Nsight for GP
    tracing
    perf
    nsight
+   binary_tools
