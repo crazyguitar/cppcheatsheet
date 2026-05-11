@@ -28,6 +28,56 @@ ROOT = os.path.join(DIR, "docs", "_build", "html")
 # them from the index cleanly instead of 404-churning.
 _LEGACY_VERSIONED_PATH = re.compile(r"^(?:en/)?\d+\.\d+\.\d+/(.+)$")
 
+# Pre-restructure docs lived at flat paths like /notes/cpp_time.html. The
+# 2026 reorg moved them under section subdirectories (/notes/cpp/cpp_time.html
+# etc.), but Google still indexes the old URLs. Explicit mappings cover the
+# renames; everything else falls back to the simple `cpp_X.html ->
+# cpp/cpp_X.html` pattern when the nested file actually exists.
+_LEGACY_FLAT_REDIRECTS = {
+    "notes/asm_basic.html": "notes/c/asm.html",
+    "notes/c_make.html": "notes/c/make.html",
+    "notes/cmake_basic.html": "notes/cpp/cpp_cmake.html",
+    "notes/cmake_external.html": "notes/cpp/cpp_cmake.html",
+    "notes/cmake_package.html": "notes/cpp/cpp_cmake.html",
+    "notes/bash_basic.html": "notes/tools/bash.html",
+    "notes/bash_find.html": "notes/tools/bash.html",
+    "notes/bash_re.html": "notes/tools/bash.html",
+    "notes/bash_os.html": "notes/tools/bash.html",
+    "notes/bash_date.html": "notes/tools/bash.html",
+    "notes/c_socket.html": "notes/os/os_socket.html",
+    "notes/c_file.html": "notes/os/os_file.html",
+    "notes/c_signal.html": "notes/os/os_signal.html",
+    "notes/c_concurrency.html": "notes/os/os_thread.html",
+    "notes/c_gnuext.html": "notes/c/c_macro.html",
+    "notes/cpp_constructor.html": "notes/cpp/cpp_basic.html",
+    "notes/cpp_forwarding.html": "notes/cpp/cpp_move.html",
+    "notes/cpp_variadic.html": "notes/cpp/cpp_template.html",
+    "notes/cpp_initialization.html": "notes/cpp/cpp_raii.html",
+    "notes/cpp_ranges.html": "notes/cpp/cpp_iterator.html",
+    "notes/gdb_debug.html": "notes/debug/gdb.html",
+    "notes/perf.html": "notes/debug/perf.html",
+    "notes/systemd.html": "notes/tools/systemd.html",
+}
+
+_LEGACY_FLAT_PATTERN = re.compile(
+    r"^notes/(cpp|c|cuda|rust)_([a-z0-9_]+)\.html$"
+)
+
+
+def _resolve_legacy_flat_target(path):
+    """Return the nested URL for a known legacy flat path, or None."""
+    explicit = _LEGACY_FLAT_REDIRECTS.get(path)
+    if explicit:
+        return explicit
+    match = _LEGACY_FLAT_PATTERN.match(path)
+    if not match:
+        return None
+    prefix, rest = match.group(1), match.group(2)
+    candidate = "notes/{0}/{0}_{1}.html".format(prefix, rest)
+    if os.path.isfile(os.path.join(ROOT, candidate)):
+        return candidate
+    return None
+
 
 def find_key(token):
     """Find the key from the environment variable."""
@@ -105,11 +155,31 @@ def page_not_found(e):
 
 
 @app.before_request
+def redirect_canonical_host():
+    """301 www.cppcheatsheet.com to the canonical (non-www) origin."""
+    host = (request.host or "").lower()
+    if host.startswith("www.cppcheatsheet.com"):
+        canonical = host[len("www."):]
+        url = "{0}://{1}{2}".format(request.scheme, canonical, request.path)
+        if request.query_string:
+            url += "?" + request.query_string.decode("latin-1")
+        return redirect(url, code=301)
+
+
+@app.before_request
 def redirect_legacy_versioned_paths():
     """301 legacy sitemap URLs (/en/0.1.0/...) to flat canonical paths."""
     match = _LEGACY_VERSIONED_PATH.match(request.path.lstrip("/"))
     if match:
         return redirect("/" + match.group(1), code=301)
+
+
+@app.before_request
+def redirect_legacy_flat_paths():
+    """301 pre-restructure flat URLs to their current nested locations."""
+    target = _resolve_legacy_flat_target(request.path.lstrip("/"))
+    if target:
+        return redirect("/" + target, code=301)
 
 
 @app.route("/<path:path>")

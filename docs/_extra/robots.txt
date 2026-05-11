@@ -1,4 +1,8 @@
 User-agent: *
+Disallow: /_sources/
+Disallow: /search.html
+Disallow: /genindex.html
+Disallow: /404.html
 Allow: /
 
 Sitemap: https://cppcheatsheet.com/sitemap.xml

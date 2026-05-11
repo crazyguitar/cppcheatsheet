@@ -12,6 +12,8 @@ from flask_testing import LiveServerTestCase
 
 from app import acme, find_key, static_proxy, index_redirection, page_not_found
 from app import redirect_legacy_versioned_paths
+from app import redirect_legacy_flat_paths, redirect_canonical_host
+from app import _resolve_legacy_flat_target
 
 from app import ROOT
 from app import app
@@ -174,6 +176,78 @@ class PysheeetTest(LiveServerTestCase):
             self.assertTrue(
                 resp.headers["Location"].endswith("/notes/cpp/cpp_basic.html")
             )
+
+    def test_resolve_legacy_flat_target_explicit(self):
+        """Explicit renames in the lookup table resolve correctly."""
+        cases = {
+            "notes/asm_basic.html": "notes/c/asm.html",
+            "notes/cmake_basic.html": "notes/cpp/cpp_cmake.html",
+            "notes/cpp_ranges.html": "notes/cpp/cpp_iterator.html",
+            "notes/gdb_debug.html": "notes/debug/gdb.html",
+            "notes/bash_find.html": "notes/tools/bash.html",
+        }
+        for old, new in cases.items():
+            self.assertEqual(_resolve_legacy_flat_target(old), new)
+
+    def test_resolve_legacy_flat_target_pattern(self):
+        """Pattern fallback resolves cpp_<X>.html -> cpp/cpp_<X>.html when the
+        nested file exists in the build output."""
+        # cpp/cpp_basic.html exists, so cpp_basic.html should resolve to it.
+        self.assertEqual(
+            _resolve_legacy_flat_target("notes/cpp_basic.html"),
+            "notes/cpp/cpp_basic.html",
+        )
+
+    def test_resolve_legacy_flat_target_unknown(self):
+        """Unknown paths return None so the request is not redirected."""
+        self.assertIsNone(_resolve_legacy_flat_target("notes/cpp/cpp_basic.html"))
+        self.assertIsNone(_resolve_legacy_flat_target("notes/totally_made_up.html"))
+        self.assertIsNone(_resolve_legacy_flat_target("about.html"))
+
+    def test_redirect_legacy_flat_paths_passthrough(self):
+        """Current nested URLs are not intercepted by the legacy redirector."""
+        with app.test_request_context("/notes/cpp/cpp_basic.html"):
+            self.assertIsNone(redirect_legacy_flat_paths())
+
+    def test_redirect_legacy_flat_paths_explicit(self):
+        """A renamed flat URL returns 301 to its new nested location."""
+        with app.test_request_context("/notes/asm_basic.html"):
+            resp = redirect_legacy_flat_paths()
+            self.assertEqual(resp.status_code, 301)
+            self.assertTrue(resp.headers["Location"].endswith("/notes/c/asm.html"))
+
+    def test_redirect_canonical_host_www(self):
+        """Requests to www.cppcheatsheet.com 301 to the bare domain."""
+        with app.test_request_context(
+            "/notes/cpp/cpp_basic.html",
+            base_url="https://www.cppcheatsheet.com",
+        ):
+            resp = redirect_canonical_host()
+            self.assertEqual(resp.status_code, 301)
+            self.assertEqual(
+                resp.headers["Location"],
+                "https://cppcheatsheet.com/notes/cpp/cpp_basic.html",
+            )
+
+    def test_redirect_canonical_host_preserves_query(self):
+        """www -> non-www redirect preserves the query string."""
+        with app.test_request_context(
+            "/search?q=cmake",
+            base_url="https://www.cppcheatsheet.com",
+        ):
+            resp = redirect_canonical_host()
+            self.assertEqual(resp.status_code, 301)
+            self.assertEqual(
+                resp.headers["Location"],
+                "https://cppcheatsheet.com/search?q=cmake",
+            )
+
+    def test_redirect_canonical_host_passthrough(self):
+        """Requests already on the canonical host are not redirected."""
+        with app.test_request_context(
+            "/", base_url="https://cppcheatsheet.com",
+        ):
+            self.assertIsNone(redirect_canonical_host())
 
 
 if __name__ == "__main__":
