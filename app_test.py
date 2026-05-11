@@ -190,8 +190,7 @@ class PysheeetTest(LiveServerTestCase):
             self.assertEqual(_resolve_legacy_flat_target(old), new)
 
     def test_resolve_legacy_flat_target_pattern(self):
-        """Pattern fallback resolves cpp_<X>.html -> cpp/cpp_<X>.html when the
-        nested file exists in the build output."""
+        """Pattern fallback resolves flat URLs to existing nested files."""
         # cpp/cpp_basic.html exists, so cpp_basic.html should resolve to it.
         self.assertEqual(
             _resolve_legacy_flat_target("notes/cpp_basic.html"),
@@ -200,9 +199,13 @@ class PysheeetTest(LiveServerTestCase):
 
     def test_resolve_legacy_flat_target_unknown(self):
         """Unknown paths return None so the request is not redirected."""
-        self.assertIsNone(_resolve_legacy_flat_target("notes/cpp/cpp_basic.html"))
-        self.assertIsNone(_resolve_legacy_flat_target("notes/totally_made_up.html"))
-        self.assertIsNone(_resolve_legacy_flat_target("about.html"))
+        cases = (
+            "notes/cpp/cpp_basic.html",
+            "notes/totally_made_up.html",
+            "about.html",
+        )
+        for path in cases:
+            self.assertIsNone(_resolve_legacy_flat_target(path))
 
     def test_redirect_legacy_flat_paths_passthrough(self):
         """Current nested URLs are not intercepted by the legacy redirector."""
@@ -214,7 +217,9 @@ class PysheeetTest(LiveServerTestCase):
         with app.test_request_context("/notes/asm_basic.html"):
             resp = redirect_legacy_flat_paths()
             self.assertEqual(resp.status_code, 301)
-            self.assertTrue(resp.headers["Location"].endswith("/notes/c/asm.html"))
+            self.assertTrue(
+                resp.headers["Location"].endswith("/notes/c/asm.html")
+            )
 
     def test_redirect_canonical_host_www(self):
         """Requests to www.cppcheatsheet.com 301 to the bare domain."""
@@ -230,7 +235,7 @@ class PysheeetTest(LiveServerTestCase):
             )
 
     def test_redirect_canonical_host_preserves_query(self):
-        """www -> non-www redirect preserves the query string."""
+        """Non-www redirect preserves the query string."""
         with app.test_request_context(
             "/search?q=cmake",
             base_url="https://www.cppcheatsheet.com",
