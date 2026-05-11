@@ -203,6 +203,8 @@ class PysheeetTest(LiveServerTestCase):
             "notes/cpp/cpp_basic.html",
             "notes/totally_made_up.html",
             "about.html",
+            # Matches the pattern but the nested target does not exist.
+            "notes/cpp_doesnotexist.html",
         )
         for path in cases:
             self.assertIsNone(_resolve_legacy_flat_target(path))
