@@ -18,7 +18,6 @@ jinja2>=3.1.6 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.23.1 # not directly required, pinned by Snyk to avoid a vulnerability
 myst-parser==5.1.0
 sphinx-copybutton==0.5.2
-sphinx_design==0.6.1
+sphinx_design==0.7.0
 sphinx-book-theme==1.2.0
-sphinx-sitemap==2.9.0
 sphinxext-opengraph==0.13.0
