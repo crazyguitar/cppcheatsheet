@@ -59,14 +59,46 @@ _LEGACY_FLAT_REDIRECTS = {
     "notes/systemd.html": "notes/tools/systemd.html",
 }
 
+# Pages that lived at nested paths but were renamed or removed in the
+# Jan 2026 cleanup (e.g. /notes/cpp/cpp_constructor.html merged into
+# cpp_basic.html, the /notes/cmake/ section collapsed into cpp_cmake.html,
+# the /notes/appendix/ section migrated to /notes/rust/). Google still has
+# many of these indexed -- mapping them avoids 404s and lets the index
+# converge on the surviving canonical pages.
+_LEGACY_NESTED_REDIRECTS = {
+    "notes/c/asm_basic.html": "notes/c/asm.html",
+    "notes/c/c_gnuext.html": "notes/c/c_macro.html",
+    "notes/debug/gdb_debug.html": "notes/debug/gdb.html",
+    "notes/os/os_concurrency.html": "notes/os/os_thread.html",
+    "notes/cmake/cmake_basic.html": "notes/cpp/cpp_cmake.html",
+    "notes/cmake/cmake_external.html": "notes/cpp/cpp_cmake.html",
+    "notes/cmake/cmake_package.html": "notes/cpp/cpp_cmake.html",
+    "notes/cmake/index.html": "notes/cpp/cpp_cmake.html",
+    "notes/cpp/cpp_constructor.html": "notes/cpp/cpp_basic.html",
+    "notes/cpp/cpp_forwarding.html": "notes/cpp/cpp_move.html",
+    "notes/cpp/cpp_initialization.html": "notes/cpp/cpp_raii.html",
+    "notes/cpp/cpp_ranges.html": "notes/cpp/cpp_iterator.html",
+    "notes/cpp/cpp_variadic.html": "notes/cpp/cpp_template.html",
+    "notes/tools/bash_date.html": "notes/tools/bash.html",
+    "notes/tools/bash_find.html": "notes/tools/bash.html",
+    "notes/tools/bash_os.html": "notes/tools/bash.html",
+    "notes/tools/bash_re.html": "notes/tools/bash.html",
+    "notes/bash/index.html": "notes/tools/bash.html",
+    "notes/appendix/index.html": "notes/rust/index.html",
+    "notes/appendix/rust_from_cpp.html": "notes/rust/index.html",
+}
+
 _LEGACY_FLAT_PATTERN = re.compile(
     r"^notes/(cpp|c|cuda|rust)_([a-z0-9_]+)\.html$"
 )
 
 
 def _resolve_legacy_flat_target(path):
-    """Return the nested URL for a known legacy flat path, or None."""
-    explicit = _LEGACY_FLAT_REDIRECTS.get(path)
+    """Return the canonical URL for a known legacy path, or None."""
+    explicit = (
+        _LEGACY_FLAT_REDIRECTS.get(path)
+        or _LEGACY_NESTED_REDIRECTS.get(path)
+    )
     if explicit:
         return explicit
     match = _LEGACY_FLAT_PATTERN.match(path)

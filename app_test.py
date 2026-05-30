@@ -189,6 +189,32 @@ class PysheeetTest(LiveServerTestCase):
         for old, new in cases.items():
             self.assertEqual(_resolve_legacy_flat_target(old), new)
 
+    def test_resolve_legacy_flat_target_nested(self):
+        """Renamed/removed nested paths resolve to current canonical URLs."""
+        cases = {
+            "notes/c/asm_basic.html": "notes/c/asm.html",
+            "notes/debug/gdb_debug.html": "notes/debug/gdb.html",
+            "notes/os/os_concurrency.html": "notes/os/os_thread.html",
+            "notes/cmake/cmake_basic.html": "notes/cpp/cpp_cmake.html",
+            "notes/cmake/index.html": "notes/cpp/cpp_cmake.html",
+            "notes/cpp/cpp_constructor.html": "notes/cpp/cpp_basic.html",
+            "notes/cpp/cpp_ranges.html": "notes/cpp/cpp_iterator.html",
+            "notes/tools/bash_find.html": "notes/tools/bash.html",
+            "notes/bash/index.html": "notes/tools/bash.html",
+            "notes/appendix/rust_from_cpp.html": "notes/rust/index.html",
+        }
+        for old, new in cases.items():
+            self.assertEqual(_resolve_legacy_flat_target(old), new)
+
+    def test_redirect_legacy_flat_paths_nested(self):
+        """A removed nested URL returns 301 to its new canonical location."""
+        with app.test_request_context("/notes/cmake/cmake_basic.html"):
+            resp = redirect_legacy_flat_paths()
+            self.assertEqual(resp.status_code, 301)
+            self.assertTrue(
+                resp.headers["Location"].endswith("/notes/cpp/cpp_cmake.html")
+            )
+
     def test_resolve_legacy_flat_target_pattern(self):
         """Pattern fallback resolves flat URLs to existing nested files."""
         # cpp/cpp_basic.html exists, so cpp_basic.html should resolve to it.
